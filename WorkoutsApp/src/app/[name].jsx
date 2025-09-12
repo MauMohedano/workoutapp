@@ -35,7 +35,7 @@ export default function ExerciseDetailsScreen() {
     )
 }
 
-//adfadfadsf
+
 
 
 const styles = StyleSheet.create({
