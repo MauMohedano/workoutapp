@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
-import exercises from "../../assets/data/exercises.json";
 import { useState } from "react";
 import { gql } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
 import client from "../graphqlClient";
+import NewSetInput from "../components/NewSetInput";
 
 const exerciseQuery = gql`
     query exercises($name: String) {
@@ -18,7 +18,7 @@ const exerciseQuery = gql`
 `
 
 export default function ExerciseDetailsScreen() {
-    const {name} = useLocalSearchParams();
+    const { name } = useLocalSearchParams();
     const { data, isLoading, error } = useQuery({
         queryKey: ['exercises', name],
         queryFn: () => client.request(exerciseQuery, { name })
@@ -53,10 +53,11 @@ export default function ExerciseDetailsScreen() {
             </View>
             <View style={styles.panel}>
                 <Text numberOfLines={isInstructionExpanded ? 0 : 3} style={styles.instructions}> {exercise.instructions}</Text>
+                <Text onPress={() => setIsInstructionExpanded(!isInstructionExpanded)} style={styles.seeMore}>
+                    {isInstructionExpanded ? 'See Less' : 'See More'}
+                </Text>
             </View>
-            <Text onPress={() => setIsInstructionExpanded(!isInstructionExpanded)} style={styles.seeMore}>
-                {isInstructionExpanded ? 'See Less' : 'See More'}
-            </Text>
+            <NewSetInput />
         </ScrollView>
     )
 }
