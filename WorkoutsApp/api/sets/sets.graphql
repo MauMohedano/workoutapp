@@ -1,0 +1,21 @@
+type Set {
+  _id: ID!
+  exercise: String!
+  reps: Int!
+  weight: Int!
+}
+
+extend type Query {
+  sets: [Set] @rest(
+    endpoint: "https://7997ef66a78a.ngrok-free.app/api/exercises"
+  )
+}
+
+extend type Mutation {
+  addSet(exercise: String!, reps: Int!, weight: Int!): Set
+    @rest(
+      endpoint: "https://7997ef66a78a.ngrok-free.app/api/exercises"
+      method: POST
+      postbody: "{ \"exercise\": \"$exercise\", \"reps\": $reps, \"weight\": $weight }"
+    )
+}
