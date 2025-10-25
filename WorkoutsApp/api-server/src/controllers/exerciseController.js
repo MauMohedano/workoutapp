@@ -13,11 +13,16 @@ const getExercises = async (req, res) => {
 // Crear un ejercicio
 const createExercise = async (req, res) => {
   try {
+    console.log('BODY:', req.body);  // <- ver exactamente qué llega
     const { exercise, reps, weight } = req.body;
-    const newExercise = new Exercise({ exercise, reps, weight });
+
+    if (!exercise || reps == null || weight == null) {
+      return res.status(400).json({ error: 'exercise, reps y weight son requeridos' });
+    }
+
+    const newExercise = new Exercise({ exercise, reps: Number(reps), weight: Number(weight) });
     const savedExercise = await newExercise.save();
 
-    // devolver solo los campos necesarios
     res.json({
       _id: savedExercise._id,
       exercise: savedExercise.exercise,
@@ -25,8 +30,8 @@ const createExercise = async (req, res) => {
       weight: savedExercise.weight
     });
   } catch (error) {
-    res.status(400).json({ error: 'Error al crear ejercicio' });
+    console.error('CREATE EXERCISE ERROR:', error); // <- mostrar error real
+    res.status(500).json({ error: error.message });
   }
 };
-
 module.exports = { getExercises, createExercise };
