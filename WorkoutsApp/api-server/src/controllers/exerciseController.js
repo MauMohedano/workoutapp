@@ -34,4 +34,54 @@ const createExercise = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { getExercises, createExercise };
+
+// Actualizar un set
+const updateExercise = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { exercise, reps, weight } = req.body;
+
+    const updated = await Exercise.findByIdAndUpdate(
+      id,
+      { exercise, reps: Number(reps), weight: Number(weight) },
+      { new: true, runValidators: true }
+    ).select('_id exercise reps weight');
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Set no encontrado' });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    console.error('UPDATE EXERCISE ERROR:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Eliminar un set
+const deleteExercise = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Exercise.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Set no encontrado' });
+    }
+
+    res.json({ 
+      message: 'Set eliminado correctamente',
+      deleted: {
+        _id: deleted._id,
+        exercise: deleted.exercise,
+        reps: deleted.reps,
+        weight: deleted.weight
+      }
+    });
+  } catch (error) {
+    console.error('DELETE EXERCISE ERROR:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getExercises, createExercise, updateExercise, deleteExercise };
