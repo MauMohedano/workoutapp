@@ -1,17 +1,19 @@
-import { View, Text, StyleSheet, ActivityIndicator, Pressable, Alert, FlatList, LogBox } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Pressable, Alert, FlatList, LogBox } from "react-native";
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getRoutineById } from "../../api/routineApi";
 import { useState, useEffect } from "react";
 import { useSessionProgress } from "../../hooks/useSessionProgress";
 import { getWorkoutProgress } from "../../utils/workoutProgressCache";
-
 import React from "react";
+
+// Design System
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Text, Button, Card } from '@/design-systems/components';
 
 LogBox.ignoreLogs([
     'VirtualizedLists should never be nested'
 ]);
-
 
 export default function RoutineDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -64,7 +66,9 @@ export default function RoutineDetailScreen() {
     if (error) {
         return (
             <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Error: {error.message}</Text>
+                <Text variant="body" color="danger.main" align="center">
+                    Error: {error.message}
+                </Text>
             </View>
         );
     }
@@ -72,7 +76,9 @@ export default function RoutineDetailScreen() {
     if (!routine) {
         return (
             <View style={styles.centerContainer}>
-                <Text>Rutina no encontrada</Text>
+                <Text variant="body" color="neutral.gray500">
+                    Rutina no encontrada
+                </Text>
             </View>
         );
     }
@@ -127,13 +133,10 @@ export default function RoutineDetailScreen() {
         )
     }
 
-    // Calcular qué día corresponde a la sesión actual
     const totalDays = routine.days?.length || 3;
     const currentDayIndex = ((currentSession - 1) % totalDays);
     const currentWeek = Math.ceil(currentSession / totalDays);
     const sessionsData = Array.from({ length: 21 }, (_, i) => i + 1);
-
-
 
     return (
         <FlatList
@@ -146,70 +149,78 @@ export default function RoutineDetailScreen() {
 
                     {/* Header con progreso */}
                     <View style={styles.header}>
-                        <Text style={styles.routineName}>{routine.name}</Text>
+                        <Text variant="h1" color="neutral.gray600" style={{ marginBottom: spacing.sm }}>
+                            {routine.name}
+                        </Text>
                         {routine.description ? (
-                            <Text style={styles.description}>{routine.description}</Text>
+                            <Text variant="body" color="neutral.gray500" style={{ marginBottom: spacing.base }}>
+                                {routine.description}
+                            </Text>
                         ) : null}
 
                         {/* Progreso de sesiones */}
-                        <View style={styles.progressCard}>
-                            <Text style={styles.progressTitle}>Progreso del Programa</Text>
-                            <Text style={styles.progressText}>
+                        <Card variant="flat" shadow={false} style={{ marginBottom: spacing.sm + 2 }}>
+                            <Text variant="bodySmall" color="neutral.gray500" style={{ marginBottom: spacing.xs }}>
+                                Progreso del Programa
+                            </Text>
+                            <Text variant="h2" color="primary.main" style={{ marginBottom: 2 }}>
                                 Sesión {currentSession} de 21
                             </Text>
-                            <Text style={styles.progressSubtext}>
+                            <Text variant="bodySmall" color="neutral.gray500" style={{ marginBottom: spacing.sm }}>
                                 {routine.days?.sort((a, b) => a.order - b.order)[currentDayIndex]?.name}
                             </Text>
                             <View style={styles.progressBar}>
                                 <View style={[styles.progressFill, { width: `${(currentSession / 21) * 100}%` }]} />
                             </View>
-                        </View>
+                        </Card>
                     </View>
 
                     {/* Próxima sesión destacada */}
                     <View style={styles.nextSessionCard}>
-                        <Text style={styles.nextSessionTitle}>📍 Próxima Sesión</Text>
-                        <Text style={styles.nextSessionDay}>
+                        <Text variant="bodySmall" style={styles.nextSessionTitle}>
+                            📍 Próxima Sesión
+                        </Text>
+                        <Text variant="h2" style={styles.nextSessionDay}>
                             {routine.days?.sort((a, b) => a.order - b.order)[currentDayIndex]?.name}
                         </Text>
-                        <Pressable
-                            style={[
-                                styles.startNextButton,
-                                workoutProgress && styles.continueButton
-                            ]}
+                        <Button
+                            variant="primary"
+                            fullWidth
                             onPress={() => startWorkout(currentSession)}
                             disabled={loadingProgress}
+                            style={workoutProgress && styles.continueButton}
                         >
-                            <Text style={styles.startNextButtonText}>
-                                {loadingProgress ? '⏳ Cargando...' :
-                                    workoutProgress ?
-                                        `▶️ Continuar Sesión ${currentSession}` :
-                                        `🏋️ Iniciar Sesión ${currentSession}`
-                                }
-                            </Text>
-                        </Pressable>
+                            {loadingProgress ? '⏳ Cargando...' :
+                                workoutProgress ?
+                                    `▶️ Continuar Sesión ${currentSession}` :
+                                    `🏋️ Iniciar Sesión ${currentSession}`
+                            }
+                        </Button>
 
                         {workoutProgress && !loadingProgress && (
-                            <Text style={styles.progressIndicator}>
+                            <Text variant="bodySmall" style={styles.progressIndicator}>
                                 📍 Ejercicio {workoutProgress.exerciseIndex + 1} de {workoutProgress.totalExercises}
                             </Text>
                         )}
 
                         {currentSession < 21 && (
-                            <Pressable
-                                style={styles.skipButton}
+                            <Button
+                                variant="secondary"
+                                fullWidth
+                                size="sm"
                                 onPress={handleSkipSession}
+                                style={{ marginTop: spacing.sm }}
                             >
-                                <Text style={styles.skipButtonText}>
-                                    ⏭️ Saltar a Sesión {currentSession + 1}
-                                </Text>
-                            </Pressable>
+                                ⏭️ Saltar a Sesión {currentSession + 1}
+                            </Button>
                         )}
                     </View>
 
                     {/* Título de la sección */}
                     <View style={styles.daysSection}>
-                        <Text style={styles.sectionTitle}>Programa Completo (21 Sesiones)</Text>
+                        <Text variant="h3" color="neutral.gray600">
+                            Programa Completo (21 Sesiones)
+                        </Text>
                     </View>
                 </>
             )}
@@ -224,52 +235,84 @@ export default function RoutineDetailScreen() {
                 if (!day) return null;
 
                 return (
-                    <View style={[
-                        styles.dayCard,
-                        isCurrent && styles.currentSessionCard
-                    ]}>
+                    <Card 
+                        variant={isCurrent ? 'highlighted' : 'default'}
+                        style={styles.sessionCard}
+                    >
                         {/* Header colapsable */}
                         <Pressable
                             style={styles.dayHeader}
                             onPress={() => toggleDay(`session-${sessionNum}`)}
                         >
                             <View style={styles.dayHeaderLeft}>
-                                <Text style={styles.dayName}>
-                                    {isCompleted ? '✅' : isCurrent ? '📍' : '⚪'} Sesión {sessionNum}: {day.name}
+                                <Text variant="h3" color="neutral.gray600">
+                                    Sesión {sessionNum} - {day.name}
                                 </Text>
-                                <Text style={styles.exerciseCount}>
-                                    {day.exercises?.length || 0} ejercicios
+                                <Text variant="bodySmall" color="neutral.gray400">
+                                    💪 {day.exercises?.length || 0} ejercicios
                                 </Text>
                             </View>
-                            <Text style={styles.expandIcon}>
-                                {isExpanded ? '▼' : '▶'}
-                            </Text>
+
+                            {/* Badges */}
+                            <View style={styles.badgeContainer}>
+                                {isCurrent && (
+                                    <View style={[styles.badge, { backgroundColor: colors.primary.main }]}>
+                                        <Text variant="caption" style={{ color: colors.neutral.white }}>
+                                            📍 Actual
+                                        </Text>
+                                    </View>
+                                )}
+                                {isSessionCompleted(sessionNum) && (
+                                    <View style={[styles.badge, { backgroundColor: colors.success.main }]}>
+                                        <Text variant="caption" style={{ color: colors.neutral.white }}>
+                                            ✅ Hecha
+                                        </Text>
+                                    </View>
+                                )}
+                                {isSessionSkipped(sessionNum) && (
+                                    <View style={[styles.badge, { backgroundColor: colors.warning.main }]}>
+                                        <Text variant="caption" style={{ color: colors.neutral.white }}>
+                                            ⏭️ Saltada
+                                        </Text>
+                                    </View>
+                                )}
+                                <Text variant="body" color="primary.main" style={{ marginLeft: spacing.sm }}>
+                                    {isExpanded ? '▲' : '▼'}
+                                </Text>
+                            </View>
                         </Pressable>
 
-                        {/* Contenido expandido */}
+                        {/* Contenido colapsable */}
                         {isExpanded && (
                             <View style={styles.dayContent}>
                                 {/* Warm up */}
                                 {day.warm_up && day.warm_up.length > 0 && (
                                     <View style={styles.section}>
-                                        <Text style={styles.subsectionTitle}>🔥 Calentamiento:</Text>
+                                        <Text variant="bodySmall" color="neutral.gray600" bold>
+                                            🔥 Calentamiento:
+                                        </Text>
                                         {day.warm_up.map((item, idx) => (
-                                            <Text key={idx} style={styles.sectionItem}>• {item}</Text>
+                                            <Text key={idx} variant="caption" color="neutral.gray500" style={styles.sectionItem}>
+                                                • {item}
+                                            </Text>
                                         ))}
                                     </View>
                                 )}
 
                                 {/* Ejercicios */}
                                 <View style={styles.exercisesContainer}>
+                                    <Text variant="bodySmall" color="neutral.gray600" bold style={{ marginBottom: spacing.xs }}>
+                                        💪 Ejercicios:
+                                    </Text>
                                     {day.exercises?.sort((a, b) => a.order - b.order).map((exercise, idx) => (
                                         <View key={exercise._id} style={styles.exerciseItem}>
-                                            <Text style={styles.exerciseName}>
+                                            <Text variant="body" color="neutral.gray600">
                                                 {idx + 1}. {exercise.name}
                                             </Text>
-                                            <Text style={styles.exerciseDetails}>
+                                            <Text variant="bodySmall" color="primary.main">
                                                 {exercise.targetSets} × {exercise.targetReps} reps
                                             </Text>
-                                            <Text style={styles.exerciseMeta}>
+                                            <Text variant="caption" color="neutral.gray400">
                                                 {exercise.muscle} • {exercise.equipment}
                                                 {exercise.restTime ? ` • ${exercise.restTime}s descanso` : ''}
                                             </Text>
@@ -280,15 +323,19 @@ export default function RoutineDetailScreen() {
                                 {/* Cool down */}
                                 {day.cool_down && day.cool_down.length > 0 && (
                                     <View style={styles.section}>
-                                        <Text style={styles.subsectionTitle}>❄️ Enfriamiento:</Text>
+                                        <Text variant="bodySmall" color="neutral.gray600" bold>
+                                            ❄️ Enfriamiento:
+                                        </Text>
                                         {day.cool_down.map((item, idx) => (
-                                            <Text key={idx} style={styles.sectionItem}>• {item}</Text>
+                                            <Text key={idx} variant="caption" color="neutral.gray500" style={styles.sectionItem}>
+                                                • {item}
+                                            </Text>
                                         ))}
                                     </View>
                                 )}
                             </View>
                         )}
-                    </View>
+                    </Card>
                 );
             }}
         />
@@ -298,202 +345,94 @@ export default function RoutineDetailScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.neutral.gray100,
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    errorText: {
-        color: '#FF3B30',
-        fontSize: 16,
-    },
     header: {
-        backgroundColor: '#FFF',
-        padding: 16,
-        marginBottom: 10,
-    },
-    routineName: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-    },
-    description: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 16,
-    },
-    progressCard: {
-        backgroundColor: '#f8f9fa',
-        padding: 12,
-        borderRadius: 8,
-    },
-    progressTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#666',
-        marginBottom: 4,
-    },
-    progressText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#007AFF',
-        marginBottom: 2,
-    },
-    progressSubtext: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 8,
+        backgroundColor: colors.neutral.white,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
     },
     progressBar: {
         height: 8,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 4,
+        backgroundColor: colors.neutral.gray200,
+        borderRadius: radius.base,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: '#007AFF',
+        backgroundColor: colors.primary.main,
     },
     nextSessionCard: {
-        backgroundColor: '#007AFF',
-        padding: 16,
-        marginBottom: 10,
+        backgroundColor: colors.primary.main,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
     },
     nextSessionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#FFF',
+        color: colors.neutral.white,
         opacity: 0.9,
-        marginBottom: 4,
+        marginBottom: spacing.xs,
     },
     nextSessionDay: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#FFF',
-        marginBottom: 12,
+        color: colors.neutral.white,
+        marginBottom: spacing.md,
     },
-    startNextButton: {
-        backgroundColor: '#FFF',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
+    continueButton: {
+        backgroundColor: colors.warning.main,
     },
-    startNextButtonText: {
-        color: '#007AFF',
-        fontSize: 16,
-        fontWeight: '600',
+    progressIndicator: {
+        textAlign: 'center',
+        color: colors.neutral.white,
+        marginTop: spacing.sm,
+        opacity: 0.9,
     },
     daysSection: {
-        padding: 10,
+        padding: spacing.sm + 2,
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
-        paddingHorizontal: 6,
-    },
-    dayCard: {
-        backgroundColor: '#FFF',
-        marginBottom: 10,
-        borderRadius: 8,
-        overflow: 'hidden',
-    },
-    currentSessionCard: {
-        borderWidth: 2,
-        borderColor: '#007AFF',
+    sessionCard: {
+        marginBottom: spacing.sm + 2,
+        marginHorizontal: spacing.sm + 2,
     },
     dayHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
     },
     dayHeaderLeft: {
         flex: 1,
     },
-    dayName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 2,
+    badgeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
     },
-    exerciseCount: {
-        fontSize: 14,
-        color: '#666',
-    },
-    expandIcon: {
-        fontSize: 16,
-        color: '#007AFF',
-        marginLeft: 10,
+    badge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs - 2,
+        borderRadius: radius.full,
     },
     dayContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
+        paddingTop: spacing.md,
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: colors.neutral.gray200,
+        marginTop: spacing.md,
     },
     section: {
-        marginBottom: 12,
-        paddingTop: 12,
-    },
-    subsectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 4,
+        marginBottom: spacing.md,
     },
     sectionItem: {
-        fontSize: 13,
-        color: '#666',
         marginBottom: 2,
-        paddingLeft: 8,
+        paddingLeft: spacing.sm,
     },
     exercisesContainer: {
-        paddingTop: 12,
+        marginBottom: spacing.md,
     },
     exerciseItem: {
-        marginBottom: 12,
-        paddingLeft: 8,
-    },
-    exerciseName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 2,
-    },
-    exerciseDetails: {
-        fontSize: 14,
-        color: '#007AFF',
-        marginBottom: 2,
-    },
-    exerciseMeta: {
-        fontSize: 12,
-        color: '#999',
-    },
-    skipButton: {
-        backgroundColor: '#FF9500',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    skipButtonText: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    continueButton: {
-        backgroundColor: '#FF9500',  // Naranja para diferenciar
-    },
-    progressIndicator: {
-        textAlign: 'center',
-        fontSize: 14,
-        color: '#FFF',
-        marginTop: 8,
-        opacity: 0.9,
+        marginBottom: spacing.md,
+        paddingLeft: spacing.sm,
     },
 });
