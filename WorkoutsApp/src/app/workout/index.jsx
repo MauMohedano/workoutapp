@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getRoutineById } from '../../api/routineApi';
@@ -9,6 +9,10 @@ import { useSessionProgress } from '../../hooks/useSessionProgress';
 import { saveWorkoutProgress, clearWorkoutProgress } from '../../utils/workoutProgressCache';
 import { getDeviceId } from '../../utils/deviceId';
 import { useState, useEffect } from 'react';
+
+// Design System
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Text, Button, Card } from '@/design-systems/components';
 
 export default function WorkoutScreen() {
     const router = useRouter();
@@ -49,18 +53,21 @@ export default function WorkoutScreen() {
     if (error || !routine) {
         return (
             <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Error cargando rutina</Text>
+                <Text variant="body" color="danger.main" align="center">
+                    Error cargando rutina
+                </Text>
             </View>
         );
     }
 
-    // Encontrar el día correcto
     const day = routine.days?.find(d => d._id === dayId);
 
     if (!day || !day.exercises || day.exercises.length === 0) {
         return (
             <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>No hay ejercicios en este día</Text>
+                <Text variant="body" color="danger.main" align="center">
+                    No hay ejercicios en este día
+                </Text>
             </View>
         );
     }
@@ -71,7 +78,9 @@ export default function WorkoutScreen() {
     if (!currentExercise) {
         return (
             <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Ejercicio no encontrado</Text>
+                <Text variant="body" color="danger.main" align="center">
+                    Ejercicio no encontrado
+                </Text>
             </View>
         );
     }
@@ -83,15 +92,12 @@ export default function WorkoutScreen() {
 
     const isLastExercise = exerciseIndex >= exercises.length - 1;
 
-    
     const goToNextExercise = async () => {
         if (isLastExercise) {
-            // Es el último ejercicio → Completar sesión
             try {
                 await completeCurrentSession();
                 console.log('✅ Sesión completada y guardada');
 
-                // ✅ NUEVO: Limpiar progreso de workout al completar
                 if (deviceId) {
                     await clearWorkoutProgress(deviceId, routineId, sessionNumber);
                     console.log('🗑️ Progreso de workout limpiado');
@@ -102,10 +108,8 @@ export default function WorkoutScreen() {
 
             router.back();
         } else {
-            // No es el último → Avanzar al siguiente ejercicio
             const nextIndex = exerciseIndex + 1;
 
-            // ✅ NUEVO: Guardar progreso antes de cambiar de ejercicio
             if (deviceId) {
                 await saveWorkoutProgress(deviceId, routineId, sessionNumber, {
                     exerciseIndex: nextIndex,
@@ -138,9 +142,12 @@ export default function WorkoutScreen() {
                 }}
             />
 
-            {/* Progreso */}
             <View style={styles.progressHeader}>
-                <Text style={styles.progressText}>
+                <Text 
+                    variant="body" 
+                    color="neutral.gray500" 
+                    style={{ marginBottom: spacing.sm }}
+                >
                     Ejercicio {exerciseIndex + 1} de {totalExercises}
                 </Text>
                 <View style={styles.progressBar}>
@@ -151,44 +158,71 @@ export default function WorkoutScreen() {
                 </View>
             </View>
 
-            {/* Ejercicio actual */}
-            <View style={styles.exerciseCard}>
-                <Text style={styles.exerciseName}>{currentExercise.name}</Text>
-                <Text style={styles.exerciseTarget}>
+            <Card style={{ marginBottom: spacing.sm + 2 }}>
+                <Text 
+                    variant="h1" 
+                    color="neutral.gray600" 
+                    style={{ marginBottom: spacing.sm }}
+                >
+                    {currentExercise.name}
+                </Text>
+                <Text 
+                    variant="h3" 
+                    color="primary.main" 
+                    style={{ marginBottom: spacing.xs }}
+                >
                     Target: {currentExercise.targetSets} × {currentExercise.targetReps} reps
                 </Text>
-                <Text style={styles.exerciseMeta}>
+                <Text 
+                    variant="bodySmall" 
+                    color="neutral.gray500" 
+                    style={{ marginBottom: spacing.xs }}
+                >
                     {currentExercise.muscle} • {currentExercise.equipment}
                 </Text>
                 {currentExercise.restTime && (
-                    <Text style={styles.restTime}>
+                    <Text variant="bodySmall" color="warning.main">
                         ⏱️ Descanso: {currentExercise.restTime}s
                     </Text>
                 )}
-            </View>
+            </Card>
 
-            {/* Historial del último entrenamiento */}
             {lastWorkout?.hasHistory ? (
                 <View style={styles.historyCard}>
-                    <Text style={styles.historyTitle}>
+                    <Text 
+                        variant="body" 
+                        color="neutral.gray600" 
+                        bold 
+                        style={{ marginBottom: spacing.xs }}
+                    >
                         📊 Último entrenamiento (Sesión {lastWorkout.sessionNumber})
                     </Text>
                     {lastWorkout.sets.map((set, idx) => (
-                        <Text key={set._id} style={styles.historySet}>
+                        <Text 
+                            key={set._id} 
+                            variant="bodySmall" 
+                            color="neutral.gray600"
+                        >
                             • Set {idx + 1}: {set.weight}kg × {set.reps} reps
                         </Text>
                     ))}
                 </View>
             ) : (
                 <View style={styles.historyCard}>
-                    <Text style={styles.historyTitle}>📊 Primer entrenamiento</Text>
-                    <Text style={styles.historySubtext}>
+                    <Text 
+                        variant="body" 
+                        color="neutral.gray600" 
+                        bold 
+                        style={{ marginBottom: spacing.xs }}
+                    >
+                        📊 Primer entrenamiento
+                    </Text>
+                    <Text variant="bodySmall" color="neutral.gray600">
                         Este es tu primer registro de este ejercicio. ¡Dale con todo! 💪
                     </Text>
                 </View>
             )}
 
-            {/* Input para nuevo set */}
             <NewSetInput
                 exerciseName={currentExercise.name}
                 routineExerciseId={currentExercise._id}
@@ -196,33 +230,30 @@ export default function WorkoutScreen() {
                 restTime={currentExercise.restTime || 90}
             />
 
-            {/* Lista de sets de esta sesión */}
             <SetsList
                 exerciseName={currentExercise.name}
                 routineExerciseId={currentExercise._id}
                 sessionNumber={sessionNumber}
             />
 
-            {/* Botón siguiente ejercicio */}
             <View style={styles.navigationSection}>
                 {!isLastExercise ? (
-                    <Pressable
-                        style={styles.nextButton}
+                    <Button
+                        variant="primary"
+                        fullWidth
                         onPress={goToNextExercise}
                     >
-                        <Text style={styles.nextButtonText}>
-                            → Siguiente: {exercises[exerciseIndex + 1]?.name}
-                        </Text>
-                    </Pressable>
+                        → Siguiente: {exercises[exerciseIndex + 1]?.name}
+                    </Button>
                 ) : (
-                    <Pressable
-                        style={styles.completeButton}
+                    <Button
+                        variant="primary"
+                        fullWidth
                         onPress={goToNextExercise}
+                        loading={isCompleting}
                     >
-                        <Text style={styles.completeButtonText}>
-                            ✅ Completar Sesión
-                        </Text>
-                    </Pressable>
+                        ✅ Completar Sesión
+                    </Button>
                 )}
             </View>
         </ScrollView>
@@ -232,108 +263,38 @@ export default function WorkoutScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.neutral.gray100,
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
-    },
-    errorText: {
-        color: '#FF3B30',
-        fontSize: 16,
-        textAlign: 'center',
+        padding: spacing.lg,
     },
     progressHeader: {
-        backgroundColor: '#FFF',
-        padding: 16,
-        marginBottom: 10,
-    },
-    progressText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#666',
-        marginBottom: 8,
+        backgroundColor: colors.neutral.white,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
     },
     progressBar: {
         height: 8,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 4,
+        backgroundColor: colors.neutral.gray200,
+        borderRadius: radius.base,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: '#34C759',
-    },
-    exerciseCard: {
-        backgroundColor: '#FFF',
-        padding: 16,
-        marginBottom: 10,
-    },
-    exerciseName: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-    },
-    exerciseTarget: {
-        fontSize: 18,
-        color: '#007AFF',
-        marginBottom: 4,
-    },
-    exerciseMeta: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
-    },
-    restTime: {
-        fontSize: 14,
-        color: '#FF9500',
-        marginTop: 4,
+        backgroundColor: colors.success.main,
     },
     historyCard: {
-        backgroundColor: '#f8f9fa',
-        padding: 16,
-        marginBottom: 10,
+        backgroundColor: colors.neutral.gray50,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
         borderLeftWidth: 4,
-        borderLeftColor: '#007AFF',
-    },
-    historyTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 4,
-    },
-    historySubtext: {
-        fontSize: 14,
-        color: '#333',
-        marginTop: 4,
+        borderLeftColor: colors.primary.main,
     },
     navigationSection: {
-        padding: 10,
-        marginBottom: 20,
-    },
-    nextButton: {
-        backgroundColor: '#007AFF',
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    nextButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    completeButton: {
-        backgroundColor: '#34C759',
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    completeButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: '600',
+        padding: spacing.sm + 2,
+        marginBottom: spacing.lg,
     },
 });
