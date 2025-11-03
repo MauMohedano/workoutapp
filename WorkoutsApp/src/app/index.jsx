@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View, Pressable } from '
 import { useQuery } from '@tanstack/react-query';
 import { getRoutines } from '../../src/api/routineApi';
 import { Link } from 'expo-router';
-import { colors, spacing } from '@/design-systems/tokens';
+import { colors, spacing, typography, radius, shadows } from '@/design-systems/tokens';
 
 export default function HomeScreen() {
   const { data, isLoading, error } = useQuery({
@@ -79,7 +79,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral.gray100,  // ✅ Cambiado de '#f5f5f5'
+    backgroundColor: colors.neutral.gray100,
   },
   centerContainer: {
     flex: 1,
@@ -88,73 +88,57 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   errorText: {
-    color: colors.danger.main,  // ✅ Cambiado de '#FF3B30'
-    fontSize: 16,
+    color: colors.danger.main,
+    ...typography.body,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.neutral.gray600,  // ✅ Cambiado de '#333'
-    marginBottom: 8,
+    ...typography.heading3,
+    color: colors.neutral.gray600,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: colors.neutral.gray500,  // ✅ Cambiado de '#666'
+    ...typography.bodySmall,
+    color: colors.neutral.gray500,
   },
   routineCard: {
     backgroundColor: colors.neutral.white,
-     padding: spacing.base,
-    borderRadius: 12,
-    shadowColor: colors.neutral.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
+    padding: spacing.base,
+    borderRadius: radius.lg,
+    ...shadows.md,  // ← Shadow con tokens
   },
   routineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   routineName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...typography.heading2,
     color: colors.neutral.gray600,
     flex: 1,
   },
   activeBadge: {
     backgroundColor: colors.special.gold,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.lg,
   },
   activeBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...typography.captionBold,
     color: colors.neutral.gray600,
   },
   routineDescription: {
-    fontSize: 14,
+    ...typography.bodySmall,
     color: colors.neutral.gray500,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   routineStats: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.base,
   },
   statText: {
-    fontSize: 14,
+    ...typography.bodySmall,
     color: colors.neutral.gray500,
-  },
-    routineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
   },
 });
