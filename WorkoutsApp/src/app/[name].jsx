@@ -1,28 +1,17 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { gql } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
-import client from "../graphqlClient";
+import { getExerciseByName } from "../api/workoutApi";
 import NewSetInput from "../components/NewSetInput";
 import SetsList from "../components/SetsList";
 
-const exerciseQuery = gql`
-    query exercises($name: String) {
-         exercises(name: $name) {
-            name
-            muscle
-            instructions
-            equipment
-  }
-}
-`
 
 export default function ExerciseDetailsScreen() {
     const { name } = useLocalSearchParams();
     const { data, isLoading, error } = useQuery({
         queryKey: ['exercises', name],
-        queryFn: () => client.request(exerciseQuery, { name })
+        queryFn: () => getExerciseByName(name)
     })
 
     const [isInstructionExpanded, setIsInstructionExpanded] = useState(false);
@@ -35,7 +24,7 @@ export default function ExerciseDetailsScreen() {
         return <Text>Something went wrong: {error.message}</Text>
     }
 
-    const exercise = data.exercises[0]
+    const exercise = data[0]
 
     if (!exercise) {
         return <Text>Exercise not found</Text>
@@ -48,8 +37,8 @@ export default function ExerciseDetailsScreen() {
             <View style={styles.panel}>
                 <Text style={styles.exerciseName}>{exercise.name}</Text>
                 <Text style={styles.exerciseSubtitle}>
-                    <Text style={styles.exerciseSubtitle}>{exercise.muscle} </Text>|
-                    Equipment: <Text style={styles.exerciseSubtitle}>{exercise.equipment}</Text>
+                    <Text style={styles.subValue}>{exercise.muscle} </Text>|
+                    Equipment: <Text style={styles.subValue}>{exercise.equipment}</Text>
                 </Text>
             </View>
             <View style={styles.panel}>
@@ -58,8 +47,9 @@ export default function ExerciseDetailsScreen() {
                     {isInstructionExpanded ? 'See Less' : 'See More'}
                 </Text>
             </View>
-            <NewSetInput />
-            <SetsList />
+            <NewSetInput exerciseName={exercise.name} />
+            <SetsList exerciseName={exercise.name} />
+
         </ScrollView>
     )
 }
