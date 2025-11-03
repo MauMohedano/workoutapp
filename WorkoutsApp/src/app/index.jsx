@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View, Pressable } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getRoutines } from '../../src/api/routineApi';
 import { Link } from 'expo-router';
 import { colors, spacing, typography, radius, shadows } from '@/design-systems/tokens';
+import { Text, Button, Card } from '@/design-systems/components';
 
 export default function HomeScreen() {
   const { data, isLoading, error } = useQuery({
@@ -22,7 +23,9 @@ export default function HomeScreen() {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Error: {error.message}</Text>
+        <Text variant="body" color="danger.main" align="center">
+          Error: {error.message}
+        </Text>
       </View>
     );
   }
@@ -30,8 +33,18 @@ export default function HomeScreen() {
   if (!data || data.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No tienes rutinas creadas</Text>
-        <Text style={styles.emptySubtext}>Crea tu primera rutina para comenzar</Text>
+        <Text variant="h3" color="neutral.gray600" style={{ marginBottom: spacing.sm }}>
+          No tienes rutinas creadas
+        </Text>
+        <Text variant="bodySmall" color="neutral.gray500" style={{ marginBottom: spacing.xl }}>
+          Crea tu primera rutina para comenzar
+        </Text>
+        <Button
+          variant="primary"
+          onPress={() => console.log('Botón presionado!')}
+        >
+          ➕ Crear Rutina
+        </Button>
       </View>
     );
   }
@@ -40,33 +53,39 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <FlatList
         data={data}
-        contentContainerStyle={{ gap: 10, padding: 10 }}
+        contentContainerStyle={{ gap: spacing.sm + 2, padding: spacing.sm + 2 }}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <Link href={`/routines/${item._id}`} asChild>
-            <Pressable style={styles.routineCard}>
+            <Card>
               <View style={styles.routineHeader}>
-                <Text style={styles.routineName}>{item.name}</Text>
+                <Text variant="h2" color="neutral.gray600" style={styles.routineName}>
+                  {item.name}
+                </Text>
                 {item.isActive && (
                   <View style={styles.activeBadge}>
-                    <Text style={styles.activeBadgeText}>⭐ Activa</Text>
+                    <Text variant="captionBold" color="neutral.gray600">
+                      ⭐ Activa
+                    </Text>
                   </View>
                 )}
               </View>
 
               {item.description ? (
-                <Text style={styles.routineDescription}>{item.description}</Text>
+                <Text variant="bodySmall" color="neutral.gray500" style={{ marginBottom: spacing.md }}>
+                  {item.description}
+                </Text>
               ) : null}
 
               <View style={styles.routineStats}>
-                <Text style={styles.statText}>
+                <Text variant="bodySmall" color="neutral.gray500">
                   📅 {item.days?.length || 0} días
                 </Text>
-                <Text style={styles.statText}>
+                <Text variant="bodySmall" color="neutral.gray500">
                   💪 {item.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0} ejercicios
                 </Text>
               </View>
-            </Pressable>
+            </Card>
           </Link>
         )}
       />
@@ -75,7 +94,6 @@ export default function HomeScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -87,26 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
   },
-  errorText: {
-    color: colors.danger.main,
-    ...typography.body,
-    textAlign: 'center',
-  },
-  emptyText: {
-    ...typography.heading3,
-    color: colors.neutral.gray600,
-    marginBottom: spacing.sm,
-  },
-  emptySubtext: {
-    ...typography.bodySmall,
-    color: colors.neutral.gray500,
-  },
-  routineCard: {
-    backgroundColor: colors.neutral.white,
-    padding: spacing.base,
-    borderRadius: radius.lg,
-    ...shadows.md,  // ← Shadow con tokens
-  },
+
   routineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -114,8 +113,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   routineName: {
-    ...typography.heading2,
-    color: colors.neutral.gray600,
     flex: 1,
   },
   activeBadge: {
@@ -124,21 +121,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.lg,
   },
-  activeBadgeText: {
-    ...typography.captionBold,
-    color: colors.neutral.gray600,
-  },
-  routineDescription: {
-    ...typography.bodySmall,
-    color: colors.neutral.gray500,
-    marginBottom: spacing.md,
-  },
   routineStats: {
     flexDirection: 'row',
     gap: spacing.base,
-  },
-  statText: {
-    ...typography.bodySmall,
-    color: colors.neutral.gray500,
   },
 });
