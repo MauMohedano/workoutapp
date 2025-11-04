@@ -1,44 +1,48 @@
-import { View, Text, StyleSheet, TextInput, Button, Alert } from "react-native"
-import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createSet } from "../api/workoutApi"
-import ResetTimer from "./ResetTimer"
+import { View, StyleSheet, TextInput } from "react-native";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createSet } from "../api/workoutApi";
+import ResetTimer from "./ResetTimer";
+
+// Design System
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Button } from '@/design-systems/components';
 
 const NewSetInput = ({ exerciseName, routineExerciseId, sessionNumber, resetTime = 90 }) => {
-    const [reps, setReps] = useState('')
-    const [weight, setWeight] = useState('')
-    const [showTimer, setShowTimer] = useState(false)
+    const [reps, setReps] = useState('');
+    const [weight, setWeight] = useState('');
+    const [showTimer, setShowTimer] = useState(false);
 
-    const queryClient = useQueryClient()
+    const queryClient = useQueryClient();
 
     const mutation = useMutation({
         mutationFn: createSet,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['sets'] })
+            queryClient.invalidateQueries({ queryKey: ['sets'] });
 
             // Limpiar inputs
-            setReps('')
-            setWeight('')
+            setReps('');
+            setWeight('');
 
             // Mostrar timer automáticamente
-            setShowTimer(true)
+            setShowTimer(true);
 
-            console.log('✅ Set added successfully!')
+            console.log('✅ Set added successfully!');
         },
         onError: (error) => {
-            console.error('❌ Error adding set:', error.message)
+            console.error('❌ Error adding set:', error.message);
         }
-    })
+    });
 
     const addSet = () => {
         if (!reps || !weight) {
-            console.log('Please enter reps and weight')
-            return
+            console.log('Please enter reps and weight');
+            return;
         }
 
         if (!exerciseName) {
-            console.log('Exercise name is missing')
-            return
+            console.log('Exercise name is missing');
+            return;
         }
 
         mutation.mutate({
@@ -47,13 +51,13 @@ const NewSetInput = ({ exerciseName, routineExerciseId, sessionNumber, resetTime
             weight: parseInt(weight),
             sessionNumber: sessionNumber ? parseInt(sessionNumber) : undefined,
             routineExerciseId: routineExerciseId || undefined
-        })
-    }
+        });
+    };
 
     const handleTimerComplete = () => {
-        setShowTimer(false)
-        console.log('⏱️ Rest complete!')
-    }
+        setShowTimer(false);
+        console.log('⏱️ Rest complete!');
+    };
 
     return (
         <>
@@ -73,6 +77,7 @@ const NewSetInput = ({ exerciseName, routineExerciseId, sessionNumber, resetTime
                     placeholder="Reps"
                     style={styles.input}
                     keyboardType="numeric"
+                    placeholderTextColor={colors.neutral.gray400}
                 />
                 <TextInput
                     value={weight}
@@ -80,33 +85,45 @@ const NewSetInput = ({ exerciseName, routineExerciseId, sessionNumber, resetTime
                     placeholder="Weight"
                     style={styles.input}
                     keyboardType="numeric"
+                    placeholderTextColor={colors.neutral.gray400}
                 />
                 <Button
-                    title={mutation.isPending ? "Adding..." : "Add"}
+                    variant="primary"
+                    size="md"
                     onPress={addSet}
                     disabled={mutation.isPending}
-                />
+                    loading={mutation.isPending}
+                    style={styles.addButton}
+                >
+                    {mutation.isPending ? "Adding..." : "Add"}
+                </Button>
             </View>
         </>
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFF',
-        padding: 10,
-        borderRadius: 6,
+        backgroundColor: colors.neutral.white,
+        padding: spacing.sm + 2,
+        borderRadius: radius.base,
         flexDirection: 'row',
-        gap: 10,
-        marginBottom: 10,
+        gap: spacing.sm + 2,
+        marginBottom: spacing.sm + 2,
     },
     input: {
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: 'gainsboro',
-        padding: 10,
+        borderWidth: 1,
+        borderColor: colors.neutral.gray200,
+        backgroundColor: colors.neutral.white,
+        padding: spacing.sm + 2,
         flex: 1,
-        borderRadius: 5,
+        borderRadius: radius.sm,
+        fontSize: 16,
+        color: colors.neutral.gray600,
+    },
+    addButton: {
+        minWidth: 80,
     }
-})
+});
 
-export default NewSetInput
+export default NewSetInput;

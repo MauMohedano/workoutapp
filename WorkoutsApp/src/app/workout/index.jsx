@@ -134,7 +134,8 @@ export default function WorkoutScreen() {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container}
+        contentContainerStyle={{ paddingBottom: 400 }}>
             <Stack.Screen
                 options={{
                     title: `Sesión ${sessionNumber}: ${dayName}`,

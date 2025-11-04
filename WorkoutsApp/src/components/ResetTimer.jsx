@@ -1,5 +1,9 @@
-import { View, Text, StyleSheet, Pressable, Vibration } from 'react-native';
+import { View, StyleSheet, Pressable, Vibration } from 'react-native';
 import { useState, useEffect } from 'react';
+
+// Design System
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Text, Button } from '@/design-systems/components';
 
 export default function RestTimer({ restTime = 90, onComplete }) {
     const [timeLeft, setTimeLeft] = useState(restTime);
@@ -28,7 +32,7 @@ export default function RestTimer({ restTime = 90, onComplete }) {
 
     const handleComplete = () => {
         setIsRunning(false);
-        
+
         // Vibrar
         Vibration.vibrate([0, 500, 200, 500]);
 
@@ -59,15 +63,18 @@ export default function RestTimer({ restTime = 90, onComplete }) {
 
     const getProgressColor = () => {
         const percentage = (timeLeft / restTime) * 100;
-        if (percentage > 66) return '#34C759';
-        if (percentage > 33) return '#FF9500';
-        return '#FF3B30';
+        if (percentage > 66) return colors.success.main;
+        if (percentage > 33) return colors.warning.main;
+        return colors.danger.main;
+        
     };
 
     if (!isRunning && timeLeft === 0) {
         return (
             <View style={styles.completedContainer}>
-                <Text style={styles.completedText}>✅ Descanso Completado</Text>
+                <Text variant="h3" style={{ color: colors.neutral.white }}>
+                    ✅ Descanso Completado
+                </Text>
             </View>
         );
     }
@@ -75,19 +82,30 @@ export default function RestTimer({ restTime = 90, onComplete }) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>⏱️ Descanso</Text>
+                <Text variant="h3" color="neutral.gray600">
+                    ⏱️ Descanso
+                </Text>
             </View>
 
             {/* Timer circular visual */}
             <View style={styles.timerCircle}>
                 <View style={[
                     styles.progressRing,
-                    { 
+                    {
                         borderColor: getProgressColor(),
                         borderWidth: 8
                     }
                 ]}>
-                    <Text style={[styles.timeText, { color: getProgressColor() }]}>
+                    <Text
+                        variant="h1"
+                        style={{
+                            fontSize: 48,  // ← Más grande
+                            color: getProgressColor(),
+                            fontWeight: 'bold',
+                            lineHeight: 52,  // ← Fix: lineHeight explícito
+                            includeFontPadding: false,  // ← Android: quitar padding extra
+                        }}
+                    >
                         {formatTime(timeLeft)}
                     </Text>
                 </View>
@@ -95,58 +113,59 @@ export default function RestTimer({ restTime = 90, onComplete }) {
 
             {/* Controles */}
             <View style={styles.controls}>
-                <Pressable 
+                <Pressable
                     style={styles.controlButton}
                     onPress={() => addTime(-10)}
                     disabled={timeLeft <= 10}
                 >
-                    <Text style={styles.controlButtonText}>-10s</Text>
+                    <Text variant="bodySmall" color="neutral.gray600" bold>
+                        -10s
+                    </Text>
                 </Pressable>
 
-                <Pressable 
+                <Pressable
                     style={[styles.controlButton, styles.pauseButton]}
                     onPress={togglePause}
                 >
-                    <Text style={styles.controlButtonText}>
+                    <Text variant="bodySmall" style={{ color: colors.neutral.white }} bold>
                         {isPaused ? '▶️' : '⏸️'}
                     </Text>
                 </Pressable>
 
-                <Pressable 
+                <Pressable
                     style={styles.controlButton}
                     onPress={() => addTime(10)}
                 >
-                    <Text style={styles.controlButtonText}>+10s</Text>
+                    <Text variant="bodySmall" color="neutral.gray600" bold>
+                        +10s
+                    </Text>
                 </Pressable>
             </View>
 
-            <Pressable 
-                style={styles.skipButton}
+            <Button
+                variant="ghost"
                 onPress={skip}
             >
-                <Text style={styles.skipButtonText}>⏭️ Saltar</Text>
-            </Pressable>
+                ⏭️ Saltar
+            </Button>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFF',
-        padding: 20,
-        marginBottom: 10,
+        backgroundColor: colors.neutral.white,
+        padding: spacing.base,  // ← De spacing.xl a spacing.base
+        marginVertical: spacing.sm,  // ← Reducido
+        marginHorizontal: spacing.sm + 2,
         alignItems: 'center',
+        borderRadius: radius.lg,
     },
     header: {
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#333',
+        marginBottom: spacing.lg,
     },
     timerCircle: {
-        marginBottom: 20,
+        marginBottom: spacing.xl,
     },
     progressRing: {
         width: 150,
@@ -154,50 +173,29 @@ const styles = StyleSheet.create({
         borderRadius: 75,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
-    },
-    timeText: {
-        fontSize: 42,
-        fontWeight: 'bold',
+        backgroundColor: colors.neutral.gray50,
     },
     controls: {
         flexDirection: 'row',
-        gap: 10,
-        marginBottom: 16,
+        gap: spacing.sm + 2,
+        marginBottom: spacing.base,
     },
     controlButton: {
-        backgroundColor: '#f0f0f0',
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 8,
+        backgroundColor: colors.neutral.gray100,
+        paddingVertical: spacing.sm + 2,
+        paddingHorizontal: spacing.base,
+        borderRadius: radius.base,
+        minWidth: 60,
+        alignItems: 'center',
     },
     pauseButton: {
-        backgroundColor: '#007AFF',
-    },
-    controlButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-    },
-    skipButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-    },
-    skipButtonText: {
-        fontSize: 16,
-        color: '#007AFF',
-        fontWeight: '600',
+        backgroundColor: colors.primary.main,
     },
     completedContainer: {
-        backgroundColor: '#34C759',
-        padding: 16,
-        marginBottom: 10,
+        backgroundColor: colors.success.main,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
         alignItems: 'center',
-        borderRadius: 8,
-    },
-    completedText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#FFF',
+        borderRadius: radius.base,
     },
 });

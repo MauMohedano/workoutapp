@@ -1,251 +1,169 @@
-import { View, Text, ActivityIndicator, FlatList, StyleSheet, Pressable, Modal, TextInput, Button } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSets, updateSet } from "../api/workoutApi";
-import { useState } from 'react';
+import { View, StyleSheet, FlatList, Pressable, Alert } from "react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getSets, deleteSet } from "../api/workoutApi";
 
-const SetsList = ({ exerciseName, sessionNumber }) => {
+// Design System
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Text } from '@/design-systems/components';
+
+const SetsList = ({ exerciseName, routineExerciseId, sessionNumber }) => {
     const queryClient = useQueryClient();
-    const [editingSet, setEditingSet] = useState(null);
-    const [editReps, setEditReps] = useState('');
-    const [editWeight, setEditWeight] = useState('');
 
-    const { data, isLoading } = useQuery({
-        queryKey: ['sets', exerciseName, sessionNumber],
+    const { data: allSets, isLoading, error } = useQuery({
+        queryKey: ['sets'],
         queryFn: getSets
     });
 
-    // Mutation para actualizar
-    const updateMutation = useMutation({
-        mutationFn: ({ id, updates }) => updateSet(id, updates),
+
+
+    // Filtrar sets en el cliente
+    const sets = allSets?.filter(set => {
+        const matchesExercise = set.exercise === exerciseName;
+        const matchesSession = sessionNumber ? set.sessionNumber === parseInt(sessionNumber) : true;
+
+        return matchesExercise && matchesSession;
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteSet,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['sets'] });
-            setEditingSet(null);
-            console.log('✅ Set updated successfully!');
+            console.log('✅ Set deleted successfully!');
         },
         onError: (error) => {
-            console.error('❌ Error updating set:', error.message);
+            console.error('❌ Error deleting set:', error);
         }
     });
 
-    if (isLoading) { 
-        return <ActivityIndicator /> 
-    }
+    const handleDelete = (setId) => {
+        Alert.alert(
+            'Eliminar Set',
+            '¿Estás seguro de eliminar este set?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: () => deleteMutation.mutate(setId)
+                }
+            ]
+        );
+    };
 
-      const filteredSets = data?.filter(set => {
-        const matchesExercise = set.exercise === exerciseName;
-        const matchesSession = !sessionNumber || set.sessionNumber === Number(sessionNumber);
-        
-        /*console.log('🔍 Filtrando set:', {
-            exercise: set.exercise,
-            sessionNumber: set.sessionNumber,
-            matchesExercise,
-            matchesSession,
-            shouldShow: matchesExercise && matchesSession
-        }); */
-        
-        return matchesExercise && matchesSession;
-    }) || [];
-
-    /*console.log('📊 Sets filtrados para', exerciseName, 'sesión', sessionNumber, ':', filteredSets.length);*/
-
-    if (filteredSets.length === 0) {
+    if (isLoading) {
         return (
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No sets recorded yet</Text>
+            <View style={styles.container}>
+                <Text variant="bodySmall" color="neutral.gray500" align="center">
+                    Cargando sets...
+                </Text>
             </View>
         );
     }
 
-    const handleEdit = (item) => {
-        setEditingSet(item);
-        setEditReps(item.reps.toString());
-        setEditWeight(item.weight.toString());
-    };
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <Text variant="bodySmall" color="danger.main" align="center">
+                    Error: {error.message}
+                </Text>
+            </View>
+        );
+    }
 
-    const handleSave = () => {
-        if (!editReps || !editWeight) {
-            console.log('Please enter reps and weight');
-            return;
-        }
-
-        updateMutation.mutate({
-            id: editingSet._id,
-            updates: {
-                exercise: exerciseName,
-                reps: parseInt(editReps),
-                weight: parseInt(editWeight)
-            }
-        });
-    };
-
-    const handleCancel = () => {
-        setEditingSet(null);
-        setEditReps('');
-        setEditWeight('');
-    };
+    if (!sets || sets.length === 0) {
+        return (
+            <View style={styles.container}>
+                <Text variant="bodySmall" color="neutral.gray500" align="center">
+                    No hay sets registrados aún
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
-              <Text style={styles.title}>
-                Sets de hoy ({filteredSets.length})
+            <Text variant="body" color="neutral.gray600" bold style={styles.title}>
+                Sets completados ({sets.length})
             </Text>
 
-            <FlatList 
-                data={filteredSets}
+            <FlatList
+                data={sets}
                 keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                    <View style={styles.setItem}>
-                        <View style={styles.setInfo}>
-                            <Text style={styles.setText}>
-                                {item.reps} reps × {item.weight} kg
-                            </Text>
-                            {item.createdAt && (
-                                <Text style={styles.dateText}>
-                                    {new Date(item.createdAt).toLocaleString()}
+                scrollEnabled={false}
+                renderItem={({ item, index }) => (
+                    <Pressable
+                        onLongPress={() => handleDelete(item._id)}
+                        style={({ pressed }) => [
+                            styles.setItem,
+                            pressed && styles.setItemPressed
+                        ]}
+                    >
+                        <View style={styles.setContent}>
+                            <View style={styles.setNumber}>
+                                <Text variant="body" color="primary.main" bold>
+                                    {index + 1}
                                 </Text>
-                            )}
+                            </View>
+                            <View style={styles.setDetails}>
+                                <Text variant="body" color="neutral.gray600">
+                                    {item.weight}kg × {item.reps} reps
+                                </Text>
+                                {item.notes && (
+                                    <Text variant="caption" color="neutral.gray400">
+                                        📝 {item.notes}
+                                    </Text>
+                                )}
+                            </View>
                         </View>
-                        <Pressable 
-                            style={styles.editButton}
-                            onPress={() => handleEdit(item)}
-                        >
-                            <Text style={styles.editText}>Edit</Text>
-                        </Pressable>
-                    </View>
+                    </Pressable>
                 )}
             />
 
-            {/* Modal de edición */}
-            <Modal
-                visible={editingSet !== null}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={handleCancel}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Set</Text>
-                        
-                        <TextInput
-                            value={editReps}
-                            onChangeText={setEditReps}
-                            placeholder="Reps"
-                            style={styles.input}
-                            keyboardType="numeric"
-                        />
-                        
-                        <TextInput
-                            value={editWeight}
-                            onChangeText={setEditWeight}
-                            placeholder="Weight"
-                            style={styles.input}
-                            keyboardType="numeric"
-                        />
-
-                        <View style={styles.modalButtons}>
-                            <Button 
-                                title="Cancel" 
-                                onPress={handleCancel}
-                                color="#999"
-                            />
-                            <Button 
-                                title={updateMutation.isPending ? "Saving..." : "Save"}
-                                onPress={handleSave}
-                                disabled={updateMutation.isPending}
-                            />
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <Text variant="caption" color="neutral.gray400" align="center" style={styles.hint}>
+                💡 Mantén presionado para eliminar
+            </Text>
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFF',
-        padding: 10,
-        borderRadius: 6,
-        gap: 5,
+        marginBottom: spacing.lg,
     },
     title: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 5,
+        marginBottom: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
     },
     setItem: {
-        padding: 10,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 4,
-        marginBottom: 5,
+        backgroundColor: colors.neutral.white,
+        marginBottom: spacing.xs,
+        borderRadius: radius.base,
+        marginHorizontal: spacing.sm + 2,
+    },
+    setItemPressed: {
+        backgroundColor: colors.neutral.gray50,
+    },
+    setContent: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        padding: spacing.md,
         alignItems: 'center',
     },
-    setInfo: {
-        flex: 1,
-    },
-    setText: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    dateText: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-    editButton: {
-        backgroundColor: '#007AFF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 4,
-    },
-    editText: {
-        color: '#FFF',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    emptyContainer: {
-        backgroundColor: '#FFF',
-        padding: 20,
-        borderRadius: 6,
-        alignItems: 'center',
-    },
-    emptyText: {
-        color: 'gray',
-        fontSize: 16,
-    },
-    // Estilos del modal
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+    setNumber: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.primary.light,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: spacing.md,
     },
-    modalContent: {
-        backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 20,
-        width: '80%',
-        gap: 15,
+    setDetails: {
+        flex: 1,
     },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
+    hint: {
+        marginTop: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
     },
-    input: {
-        borderWidth: 1,
-        borderColor: 'gainsboro',
-        padding: 10,
-        borderRadius: 5,
-        fontSize: 16,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
-    }
 });
 
 export default SetsList;
