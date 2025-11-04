@@ -2,7 +2,7 @@ import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getRoutineById } from '../../api/routineApi';
-import { getLastWorkout } from '../../api/workoutApi';
+import { getLastWorkout, getSets } from '../../api/workoutApi';
 import NewSetInput from '../../components/NewSetInput';
 import SetsList from '../../components/SetsList';
 import { useSessionProgress } from '../../hooks/useSessionProgress';
@@ -14,6 +14,9 @@ import { useState, useEffect } from 'react';
 import { colors, spacing, radius } from '@/design-systems/tokens';
 import { Text, Button, Card } from '@/design-systems/components';
 
+// Workout Stats
+import { getWorkoutStats } from '../../utils/workoutStats';
+
 export default function WorkoutScreen() {
     const router = useRouter();
     const {
@@ -22,9 +25,15 @@ export default function WorkoutScreen() {
         dayId,
         dayName,
         totalExercises,
-        exerciseIndex: exerciseIndexParam
+        exerciseIndex: exerciseIndexParam,
+        isReadOnly: isReadOnlyParam
     } = useLocalSearchParams();
-    const { completeCurrentSession, isCompleting } = useSessionProgress(routineId);
+
+    const isReadOnly = isReadOnlyParam === 'true';
+
+
+    const { completeCurrentSession, isCompleting, currentSession } = useSessionProgress(routineId);
+
 
     const exerciseIndex = parseInt(exerciseIndexParam) || 0;
     const [deviceId, setDeviceId] = useState(null);
@@ -135,7 +144,7 @@ export default function WorkoutScreen() {
 
     return (
         <ScrollView style={styles.container}
-        contentContainerStyle={{ paddingBottom: 400 }}>
+            contentContainerStyle={{ paddingBottom: 400 }}>
             <Stack.Screen
                 options={{
                     title: `Sesión ${sessionNumber}: ${dayName}`,
@@ -143,10 +152,11 @@ export default function WorkoutScreen() {
                 }}
             />
 
+            {/* Progreso */}
             <View style={styles.progressHeader}>
-                <Text 
-                    variant="body" 
-                    color="neutral.gray500" 
+                <Text
+                    variant="body"
+                    color="neutral.gray500"
                     style={{ marginBottom: spacing.sm }}
                 >
                     Ejercicio {exerciseIndex + 1} de {totalExercises}
@@ -159,24 +169,42 @@ export default function WorkoutScreen() {
                 </View>
             </View>
 
+            {/* Banner Read-Only */}
+            {isReadOnly && (
+                <View style={styles.readOnlyBanner}>
+                    <Text variant="h3" style={styles.readOnlyTitle}>
+                        📖 Modo Vista Previa
+                    </Text>
+                    <Text variant="bodySmall" style={styles.readOnlySubtitle}>
+                        {parseInt(sessionNumber) < currentSession
+                            ? `✅ Sesión completada anteriormente`
+                            : `⏭️ Sesión futura - Aún no disponible`
+                        }
+                    </Text>
+                    <Text variant="caption" style={styles.readOnlyHint}>
+                        Solo puedes ver el historial. No puedes agregar sets.
+                    </Text>
+                </View>
+            )}
+
             <Card style={{ marginBottom: spacing.sm + 2 }}>
-                <Text 
-                    variant="h1" 
-                    color="neutral.gray600" 
+                <Text
+                    variant="h1"
+                    color="neutral.gray600"
                     style={{ marginBottom: spacing.sm }}
                 >
                     {currentExercise.name}
                 </Text>
-                <Text 
-                    variant="h3" 
-                    color="primary.main" 
+                <Text
+                    variant="h3"
+                    color="primary.main"
                     style={{ marginBottom: spacing.xs }}
                 >
                     Target: {currentExercise.targetSets} × {currentExercise.targetReps} reps
                 </Text>
-                <Text 
-                    variant="bodySmall" 
-                    color="neutral.gray500" 
+                <Text
+                    variant="bodySmall"
+                    color="neutral.gray500"
                     style={{ marginBottom: spacing.xs }}
                 >
                     {currentExercise.muscle} • {currentExercise.equipment}
@@ -188,20 +216,214 @@ export default function WorkoutScreen() {
                 )}
             </Card>
 
+            {/* Input para nuevo set - Solo si NO es read-only */}
+            {!isReadOnly && (
+                <NewSetInput
+                    exerciseName={currentExercise.name}
+                    routineExerciseId={currentExercise._id}
+                    sessionNumber={sessionNumber}
+                    restTime={currentExercise.restTime || 90}
+                />
+            )}
+
+            {/* Estadísticas - Solo en Read-Only */}
+            {isReadOnly && (() => {
+                // Obtener sets actuales
+                const { data: allSets } = useQuery({
+                    queryKey: ['sets'],
+                    queryFn: getSets
+                });
+
+                const sets = allSets?.filter(set => {
+                    const matchesExercise = set.exercise === currentExercise.name;
+                    const matchesSession = sessionNumber ? set.sessionNumber === parseInt(sessionNumber) : true;
+                    return matchesExercise && matchesSession;
+                });
+
+                // Calcular estadísticas
+                const stats = getWorkoutStats(
+                    sets,
+                    lastWorkout?.sets || [],
+                    currentExercise.targetSets
+                );
+
+                // Si no hay datos, no mostrar nada
+                if (!stats) return null;
+
+                return (
+                    <View style={styles.statsContainer}>
+                        <Text variant="bodySmall" color="neutral.gray600" bold style={{ marginBottom: spacing.xs, paddingHorizontal: spacing.sm + 2 }}>
+                            📊 Estadísticas - Sesión {sessionNumber}
+                        </Text>
+
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.badgesContainer}
+                        >
+                            {/* 💪 Mejor Set */}
+                            <View style={[styles.statBadge, { backgroundColor: colors.primary.light }]}>
+                                <Text variant="caption" color="neutral.gray500">💪 Mejor Set</Text>
+                                <Text variant="body" color="primary.main" bold>
+                                    {stats.bestSet.weight}kg × {stats.bestSet.reps}
+                                </Text>
+                                <Text variant="caption" color="neutral.gray500">
+                                    = {stats.bestSet.weight * stats.bestSet.reps}kg
+                                </Text>
+                            </View>
+
+                            {/* 📊 Volumen Total */}
+                            <View style={[styles.statBadge, { backgroundColor: colors.success.light }]}>
+                                <Text variant="caption" color="neutral.gray500">📊 Volumen</Text>
+                                <Text variant="body" color="success.main" bold>
+                                    {stats.totalVolume.toLocaleString()}kg
+                                </Text>
+                                <Text variant="caption" color="neutral.gray500">
+                                    {stats.totalSets} sets
+                                </Text>
+                            </View>
+
+                            {/* 🎯 Sets Completados */}
+                            {stats.completionRate !== null && (
+                                <View style={[styles.statBadge, { backgroundColor: colors.neutral.gray100 }]}>
+                                    <Text variant="caption" color="neutral.gray500">🎯 Completados</Text>
+                                    <Text variant="body" color="neutral.gray600" bold>
+                                        {stats.totalSets}/{currentExercise.targetSets}
+                                    </Text>
+                                    <Text variant="caption" color="neutral.gray500">
+                                        {stats.completionRate}%
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* 📈 vs Sesión Anterior */}
+                            {stats.volumeChange !== null && (
+                                <View style={[
+                                    styles.statBadge,
+                                    { backgroundColor: stats.volumeChange >= 0 ? colors.success.light : colors.danger.light }
+                                ]}>
+                                    <Text variant="caption" color="neutral.gray500">📈 vs Anterior</Text>
+                                    <Text
+                                        variant="body"
+                                        color={stats.volumeChange >= 0 ? "success.main" : "danger.main"}
+                                        bold
+                                    >
+                                        {stats.volumeChange >= 0 ? '+' : ''}{stats.volumeChange}%
+                                    </Text>
+                                    <Text variant="caption" color="neutral.gray500">
+                                        {stats.volumeChange >= 0 ? '🔥' : '⚠️'}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* 🏆 Personal Record */}
+                            {stats.isPersonalRecord && (
+                                <View style={[styles.statBadge, { backgroundColor: colors.special.gold }]}>
+                                    <Text variant="caption" color="neutral.gray600">🏆 PR!</Text>
+                                    <Text variant="body" color="neutral.gray600" bold>
+                                        Nuevo
+                                    </Text>
+                                    <Text variant="caption" color="neutral.gray600">
+                                        Récord
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* ⚖️ Peso Promedio */}
+                            <View style={[styles.statBadge, { backgroundColor: colors.neutral.gray100 }]}>
+                                <Text variant="caption" color="neutral.gray500">⚖️ Promedio</Text>
+                                <Text variant="body" color="neutral.gray600" bold>
+                                    {stats.avgWeight}kg
+                                </Text>
+                                <Text variant="caption" color="neutral.gray500">
+                                    {stats.avgReps} reps
+                                </Text>
+                            </View>
+
+                            {/* 🔢 Rango de Reps */}
+                            {stats.repsRange && (
+                                <View style={[styles.statBadge, { backgroundColor: colors.neutral.gray100 }]}>
+                                    <Text variant="caption" color="neutral.gray500">🔢 Rango</Text>
+                                    <Text variant="body" color="neutral.gray600" bold>
+                                        {stats.repsRange.min}-{stats.repsRange.max}
+                                    </Text>
+                                    <Text variant="caption" color="neutral.gray500">
+                                        reps
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* 💯 1RM Estimado */}
+                            <View style={[styles.statBadge, { backgroundColor: colors.primary.light }]}>
+                                <Text variant="caption" color="neutral.gray500">💯 1RM Est.</Text>
+                                <Text variant="body" color="primary.main" bold>
+                                    {stats.estimated1RM}kg
+                                </Text>
+                                <Text variant="caption" color="neutral.gray500">
+                                    Epley
+                                </Text>
+                            </View>
+                        </ScrollView>
+                    </View>
+                );
+            })()}
+
+            <SetsList
+                exerciseName={currentExercise.name}
+                routineExerciseId={currentExercise._id}
+                sessionNumber={sessionNumber}
+            />
+
+            {/* Botón siguiente ejercicio - Condicional */}
+            <View style={styles.navigationSection}>
+                {isReadOnly ? (
+                    // Modo Read-Only: Solo botón de volver
+                    <Button
+                        variant="secondary"
+                        fullWidth
+                        onPress={() => router.back()}
+                    >
+                        ← Volver al Programa
+                    </Button>
+                ) : (
+                    // Modo Normal: Navegación de workout
+                    <>
+                        {!isLastExercise ? (
+                            <Button
+                                variant="primary"
+                                fullWidth
+                                onPress={goToNextExercise}
+                            >
+                                → Siguiente: {exercises[exerciseIndex + 1]?.name}
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="primary"
+                                fullWidth
+                                onPress={goToNextExercise}
+                                loading={isCompleting}
+                            >
+                                ✅ Completar Sesión
+                            </Button>
+                        )}
+                    </>
+                )}
+                
+            {/* Último entrenamiento */}
             {lastWorkout?.hasHistory ? (
                 <View style={styles.historyCard}>
-                    <Text 
-                        variant="body" 
-                        color="neutral.gray600" 
-                        bold 
+                    <Text
+                        variant="body"
+                        color="neutral.gray600"
+                        bold
                         style={{ marginBottom: spacing.xs }}
                     >
                         📊 Último entrenamiento (Sesión {lastWorkout.sessionNumber})
                     </Text>
                     {lastWorkout.sets.map((set, idx) => (
-                        <Text 
-                            key={set._id} 
-                            variant="bodySmall" 
+                        <Text
+                            key={set._id}
+                            variant="bodySmall"
                             color="neutral.gray600"
                         >
                             • Set {idx + 1}: {set.weight}kg × {set.reps} reps
@@ -210,10 +432,10 @@ export default function WorkoutScreen() {
                 </View>
             ) : (
                 <View style={styles.historyCard}>
-                    <Text 
-                        variant="body" 
-                        color="neutral.gray600" 
-                        bold 
+                    <Text
+                        variant="body"
+                        color="neutral.gray600"
+                        bold
                         style={{ marginBottom: spacing.xs }}
                     >
                         📊 Primer entrenamiento
@@ -223,39 +445,6 @@ export default function WorkoutScreen() {
                     </Text>
                 </View>
             )}
-
-            <NewSetInput
-                exerciseName={currentExercise.name}
-                routineExerciseId={currentExercise._id}
-                sessionNumber={sessionNumber}
-                restTime={currentExercise.restTime || 90}
-            />
-
-            <SetsList
-                exerciseName={currentExercise.name}
-                routineExerciseId={currentExercise._id}
-                sessionNumber={sessionNumber}
-            />
-
-            <View style={styles.navigationSection}>
-                {!isLastExercise ? (
-                    <Button
-                        variant="primary"
-                        fullWidth
-                        onPress={goToNextExercise}
-                    >
-                        → Siguiente: {exercises[exerciseIndex + 1]?.name}
-                    </Button>
-                ) : (
-                    <Button
-                        variant="primary"
-                        fullWidth
-                        onPress={goToNextExercise}
-                        loading={isCompleting}
-                    >
-                        ✅ Completar Sesión
-                    </Button>
-                )}
             </View>
         </ScrollView>
     );
@@ -298,4 +487,40 @@ const styles = StyleSheet.create({
         padding: spacing.sm + 2,
         marginBottom: spacing.lg,
     },
+    readOnlyBanner: {
+        backgroundColor: colors.warning.main,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
+        marginHorizontal: spacing.sm + 2,
+        borderRadius: radius.lg,
+    },
+    readOnlyTitle: {
+        color: colors.neutral.white,
+        marginBottom: spacing.xs,
+    },
+    readOnlySubtitle: {
+        color: colors.neutral.white,
+        opacity: 0.95,
+        marginBottom: spacing.xs,
+    },
+    readOnlyHint: {
+        color: colors.neutral.white,
+        opacity: 0.8,
+    },
+    statsContainer: {
+        marginBottom: spacing.sm + 2,
+    },
+    badgesContainer: {
+        paddingHorizontal: spacing.sm + 2,
+        gap: spacing.sm,
+    },
+    statBadge: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.lg,
+        alignItems: 'center',
+        minWidth: 100,
+        marginRight: spacing.xs,
+    },
+
 });

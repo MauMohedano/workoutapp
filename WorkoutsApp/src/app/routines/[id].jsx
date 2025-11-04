@@ -235,7 +235,7 @@ export default function RoutineDetailScreen() {
                 if (!day) return null;
 
                 return (
-                    <Card 
+                    <Card
                         variant={isCurrent ? 'highlighted' : 'default'}
                         style={styles.sessionCard}
                     >
@@ -305,7 +305,28 @@ export default function RoutineDetailScreen() {
                                         💪 Ejercicios:
                                     </Text>
                                     {day.exercises?.sort((a, b) => a.order - b.order).map((exercise, idx) => (
-                                        <View key={exercise._id} style={styles.exerciseItem}>
+                                        <Pressable
+                                            key={exercise._id}
+                                            style={({ pressed }) => [
+                                                styles.exerciseItem,
+                                                pressed && styles.exerciseItemPressed
+                                            ]}
+                                            onPress={() => {
+                                                // Navegar a vista de ejercicio
+                                                router.push({
+                                                    pathname: '/workout',
+                                                    params: {
+                                                        routineId: routine._id,
+                                                        sessionNumber: sessionNum,
+                                                        dayId: day._id,
+                                                        dayName: day.name,
+                                                        totalExercises: day.exercises.length,
+                                                        exerciseIndex: idx,
+                                                        isReadOnly: sessionNum !== currentSession ? 'true' : 'false'
+                                                    }
+                                                });
+                                            }}
+                                        >
                                             <Text variant="body" color="neutral.gray600">
                                                 {idx + 1}. {exercise.name}
                                             </Text>
@@ -316,7 +337,12 @@ export default function RoutineDetailScreen() {
                                                 {exercise.muscle} • {exercise.equipment}
                                                 {exercise.restTime ? ` • ${exercise.restTime}s descanso` : ''}
                                             </Text>
-                                        </View>
+
+                                            {/* Indicador de clickeable */}
+                                            <Text variant="caption" color="primary.main" style={{ marginTop: spacing.xs }}>
+                                                👉 Tap para ver detalles
+                                            </Text>
+                                        </Pressable>
                                     ))}
                                 </View>
 
@@ -434,5 +460,12 @@ const styles = StyleSheet.create({
     exerciseItem: {
         marginBottom: spacing.md,
         paddingLeft: spacing.sm,
+    },
+    exerciseItem: {
+        marginBottom: spacing.md,
+        paddingLeft: spacing.sm,
+    },
+    exerciseItemPressed: {  // ← NUEVO
+        opacity: 0.6,
     },
 });
