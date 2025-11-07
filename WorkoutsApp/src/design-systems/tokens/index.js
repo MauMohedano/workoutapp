@@ -10,3 +10,4 @@ export { spacing } from './spacing';
 export { typography, typo } from './typography';
 export { radius, r } from './radius';
 export { shadows } from './shadows';
+export { Icon, iconMap, iconSizes } from './icons';

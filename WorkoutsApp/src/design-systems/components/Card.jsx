@@ -62,7 +62,7 @@ export default function Card({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.neutral.white,
+    backgroundColor: colors.neutral.elevated,
     borderRadius: radius.lg,
     overflow: 'hidden',
   },

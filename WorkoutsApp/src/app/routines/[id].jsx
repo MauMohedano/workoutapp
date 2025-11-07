@@ -8,7 +8,7 @@ import { getWorkoutProgress } from "../../utils/workoutProgressCache";
 import React from "react";
 
 // Design System
-import { colors, spacing, radius } from '@/design-systems/tokens';
+import { colors, spacing, radius, Icon, shadows } from '@/design-systems/tokens';
 import { Text, Button, Card } from '@/design-systems/components';
 
 LogBox.ignoreLogs([
@@ -176,46 +176,71 @@ export default function RoutineDetailScreen() {
                     </View>
 
                     {/* Próxima sesión destacada */}
+
                     <View style={styles.nextSessionCard}>
-                        <Text variant="bodySmall" style={styles.nextSessionTitle}>
-                            📍 Próxima Sesión
-                        </Text>
-                        <Text variant="h2" style={styles.nextSessionDay}>
-                            {routine.days?.sort((a, b) => a.order - b.order)[currentDayIndex]?.name}
-                        </Text>
+                        {/* Header con icono */}
+                        <View style={styles.nextSessionHeader}>
+                            <Icon name="flame" size={24} color={colors.neutral.white} />
+                            <Text variant="overline" style={styles.nextSessionLabel}>
+                                PRÓXIMA SESIÓN
+                            </Text>
+                        </View>
+
+                        {/* Nombre del día con icono según tipo */}
+                        <View style={styles.dayNameRow}>
+                            <Icon name="dumbbell" size={32} color={colors.neutral.white} />
+                            <View style={styles.dayInfo}>
+                                <Text variant="h1" style={styles.nextSessionDay}>
+                                    {routine.days?.sort((a, b) => a.order - b.order)[currentDayIndex]?.name}
+                                </Text>
+                                <Text variant="bodySmall" style={styles.sessionMeta}>
+                                    Semana {currentWeek} • Sesión {currentSession} de 21
+                                </Text>
+
+                                {/* PROGRESO INTEGRADO (NUEVO) */}
+                                {workoutProgress && !loadingProgress && (
+                                    <View style={styles.inlineProgress}>
+                                        <Icon name="play" size={14} color={colors.neutral.white} />
+                                        <Text variant="caption" style={styles.inlineProgressText}>
+                                            En progreso • Ejercicio {workoutProgress.exerciseIndex + 1}/{workoutProgress.totalExercises}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+
+
+
+                        {/* Botón principal */}
                         <Button
-                            variant="primary"
+                            variant={workoutProgress ? "secondary" : "primary"}
+                            size="lg"
                             fullWidth
+                            icon={workoutProgress ? "play" : "play-circle"}
                             onPress={() => startWorkout(currentSession)}
                             disabled={loadingProgress}
-                            style={workoutProgress && styles.continueButton}
+                            style={styles.mainActionButton}
                         >
-                            {loadingProgress ? '⏳ Cargando...' :
+                            {loadingProgress ? 'Cargando...' :
                                 workoutProgress ?
-                                    `▶️ Continuar Sesión ${currentSession}` :
-                                    `🏋️ Iniciar Sesión ${currentSession}`
+                                    `Continuar Sesión ${currentSession}` :
+                                    `Iniciar Sesión ${currentSession}`
                             }
                         </Button>
 
-                        {workoutProgress && !loadingProgress && (
-                            <Text variant="bodySmall" style={styles.progressIndicator}>
-                                📍 Ejercicio {workoutProgress.exerciseIndex + 1} de {workoutProgress.totalExercises}
-                            </Text>
-                        )}
-
+                        {/* Botón secundario (saltar) */}
                         {currentSession < 21 && (
-                            <Button
-                                variant="secondary"
-                                fullWidth
-                                size="sm"
+                            <Pressable
+                                style={styles.skipButton}
                                 onPress={handleSkipSession}
-                                style={{ marginTop: spacing.sm }}
                             >
-                                ⏭️ Saltar a Sesión {currentSession + 1}
-                            </Button>
+                                <Icon name="play-skip-forward" size={18} color={colors.neutral.white} />
+                                <Text variant="bodySmall" style={styles.skipButtonText}>
+                                    Saltar a Sesión {currentSession + 1}
+                                </Text>
+                            </Pressable>
                         )}
                     </View>
-
                     {/* Título de la sección */}
                     <View style={styles.daysSection}>
                         <Text variant="h3" color="neutral.gray600">
@@ -395,21 +420,66 @@ const styles = StyleSheet.create({
     },
     nextSessionCard: {
         backgroundColor: colors.primary.main,
-        padding: spacing.base,
+        padding: spacing.lg,
         marginBottom: spacing.sm + 2,
+        borderRadius: radius.xl,
+        ...shadows.xl,
+    },
+    nextSessionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.md,
+    },
+    nextSessionLabel: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+        letterSpacing: 1.2,
     },
     nextSessionTitle: {
         color: colors.neutral.white,
         opacity: 0.9,
         marginBottom: spacing.xs,
     },
+    dayNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    dayInfo: {
+        flex: 1,
+    },
     nextSessionDay: {
         color: colors.neutral.white,
-        marginBottom: spacing.md,
+        marginBottom: spacing.xs - 2,
     },
-    continueButton: {
-        backgroundColor: colors.warning.main,
+    sessionMeta: {
+        color: colors.neutral.white,
+        opacity: 0.8,
     },
+    
+    mainActionButton: {
+        marginBottom: spacing.sm,
+        ...shadows.lg,
+    },
+    skipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: radius.lg,
+        borderWidth: 1.5,
+        borderColor: colors.neutral.white + '40',
+        backgroundColor: 'transparent',
+    },
+    skipButtonText: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+    },
+
     progressIndicator: {
         textAlign: 'center',
         color: colors.neutral.white,
@@ -467,5 +537,15 @@ const styles = StyleSheet.create({
     },
     exerciseItemPressed: {  // ← NUEVO
         opacity: 0.6,
+    }, inlineProgress: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: spacing.xs,
+    },
+    inlineProgressText: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+        fontStyle: 'italic',
     },
 });

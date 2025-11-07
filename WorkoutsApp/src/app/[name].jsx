@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getExerciseByName } from "../api/workoutApi";
 import NewSetInput from "../components/NewSetInput";
 import SetsList from "../components/SetsList";
-
+import { colors, spacing, radius } from '@/design-systems/tokens';
+import { Text } from '@/design-systems/components';
 
 export default function ExerciseDetailsScreen() {
     const { name } = useLocalSearchParams();
@@ -17,76 +18,111 @@ export default function ExerciseDetailsScreen() {
     const [isInstructionExpanded, setIsInstructionExpanded] = useState(false);
 
     if (isLoading) {
-        return <ActivityIndicator />
+        return (
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color={colors.primary.main} />
+            </View>
+        );
     }
 
     if (error) {
-        return <Text>Something went wrong: {error.message}</Text>
+        return (
+            <View style={styles.centerContainer}>
+                <Text variant="body" color="danger.main">
+                    Something went wrong: {error.message}
+                </Text>
+            </View>
+        );
     }
 
     const exercise = data[0]
 
     if (!exercise) {
-        return <Text>Exercise not found</Text>
-
+        return (
+            <View style={styles.centerContainer}>
+                <Text variant="body" color="neutral.gray600">
+                    Exercise not found
+                </Text>
+            </View>
+        );
     }
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Stack.Screen options={{ title: exercise.name }} />
+            
             <View style={styles.panel}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={styles.exerciseSubtitle}>
-                    <Text style={styles.subValue}>{exercise.muscle} </Text>|
-                    Equipment: <Text style={styles.subValue}>{exercise.equipment}</Text>
+                <Text variant="h2" color="neutral.gray800" style={styles.exerciseName}>
+                    {exercise.name}
+                </Text>
+                <Text variant="bodySmall" color="neutral.gray500" style={styles.exerciseSubtitle}>
+                    <Text variant="bodySmall" color="primary.main" style={styles.subValue}>
+                        {exercise.muscle}
+                    </Text> | Equipment: <Text variant="bodySmall" color="primary.main" style={styles.subValue}>
+                        {exercise.equipment}
+                    </Text>
                 </Text>
             </View>
+            
             <View style={styles.panel}>
-                <Text numberOfLines={isInstructionExpanded ? 0 : 3} style={styles.instructions}> {exercise.instructions}</Text>
-                <Text onPress={() => setIsInstructionExpanded(!isInstructionExpanded)} style={styles.seeMore}>
+                <Text 
+                    numberOfLines={isInstructionExpanded ? 0 : 3} 
+                    variant="body"
+                    color="neutral.gray600"
+                    style={styles.instructions}
+                >
+                    {exercise.instructions}
+                </Text>
+                <Text 
+                    onPress={() => setIsInstructionExpanded(!isInstructionExpanded)} 
+                    variant="bodySmall"
+                    color="primary.main"
+                    style={styles.seeMore}
+                >
                     {isInstructionExpanded ? 'See Less' : 'See More'}
                 </Text>
             </View>
+            
             <NewSetInput exerciseName={exercise.name} />
             <SetsList exerciseName={exercise.name} />
-
         </ScrollView>
     )
 }
 
-
-
-
 const styles = StyleSheet.create({
     container: {
-        padding: 10,
-        gap: 10,
+        padding: spacing.sm + 2,
+        gap: spacing.sm + 2,
+        backgroundColor: colors.neutral.gray100,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.lg,
+        backgroundColor: colors.neutral.gray100,
     },
     panel: {
-        backgroundColor: '#FFF',
-        padding: 10,
-        borderRadius: 6,
-        gap: 4,
-
+        backgroundColor: colors.backgrounds?.elevated || colors.neutral.white,
+        padding: spacing.sm + 2,
+        borderRadius: radius.base,
+        gap: spacing.xs,
     },
     exerciseName: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        marginBottom: spacing.xs,
     },
     exerciseSubtitle: {
-        color: 'gray',
+        textTransform: 'capitalize',
     },
-    exerciseSubtitle: {
-        textTransform: 'capitalize'
+    subValue: {
+        fontWeight: '600',
     },
     instructions: {
-        fontSize: 16,
         lineHeight: 22,
     },
     seeMore: {
         alignSelf: 'center',
-        padding: 10,
+        padding: spacing.sm + 2,
         fontWeight: '600',
-        color: 'gray'
     }
-})
+});

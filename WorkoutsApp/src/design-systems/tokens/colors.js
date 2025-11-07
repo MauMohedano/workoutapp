@@ -1,63 +1,73 @@
 /**
- * 🎨 DESIGN TOKENS: COLORS
+ * 🎨 DESIGN TOKENS: COLORS V2.0
  * 
- * Paleta de colores de la aplicación.
- * Basada en iOS HIG con ajustes personalizados.
- * 
- * Uso:
- * import { colors } from '@/design-system/tokens';
- * color: colors.primary.main
+ * Paleta de colores mejorada para fitness app.
+ * Nike Energy style - Alta energía y motivación.
+ * COMPATIBLE con código existente.
  */
 
 export const colors = {
-  // ===== COLORES DE MARCA =====
+  // ===== COLORES DE MARCA (MEJORADOS) =====
   primary: {
-    main: '#007AFF',      // Azul principal (iOS blue)
-    light: '#5AC8FA',     // Azul claro
-    dark: '#0051D5',      // Azul oscuro (para hover/pressed)
+    main: '#FF4500',      // OrangeRed energético (antes #007AFF)
+    light: '#FF6B35',
+    dark: '#CC3700',
+  },
+
+  // ===== COLORES DE ACENTO (NUEVO) =====
+  accent: {
+    main: '#FFD700',      // Dorado - Logros
+    electric: '#00E5FF',  // Cyan - Energía
+    lime: '#CDFF00',      // Lima - Fresco
   },
 
   // ===== COLORES FUNCIONALES =====
   success: {
-    main: '#34C759',      // Verde (sesión completada)
-    light: '#4CD964',     // Verde claro
-    dark: '#248A3D',      // Verde oscuro
+    main: '#00E676',      // Verde neón
+    light: '#69F0AE',
+    dark: '#00C853',
   },
 
   warning: {
-    main: '#FF9500',      // Naranja (sesión en progreso)
-    light: '#FFB340',     // Naranja claro
-    dark: '#CC7700',      // Naranja oscuro
+    main: '#FFA726',
+    light: '#FFB74D',
+    dark: '#FF9800',
   },
 
   danger: {
-    main: '#FF3B30',      // Rojo (error, eliminar)
-    light: '#FF6961',     // Rojo claro
-    dark: '#CC2E24',      // Rojo oscuro
+    main: '#FF1744',
+    light: '#FF5252',
+    dark: '#D50000',
   },
 
   // ===== COLORES NEUTROS =====
   neutral: {
-    white: '#FFFFFF',
-    gray50: '#FAFAFA',
-    gray100: '#F5F5F5',   // Background principal
-    gray200: '#E0E0E0',   // Borders, dividers
-    gray300: '#CCCCCC',   // Borders activos
-    gray400: '#999999',   // Secondary text, icons
-    gray500: '#666666',   // Primary text
-    gray600: '#333333',   // Headings, emphasis
-    black: '#000000',
+  white: '#FFFFFF',
+  gray50: '#FAFAFA',
+  gray100: '#F5F5F5',
+  gray200: '#E0E0E0',
+  gray300: '#CCCCCC',
+  gray400: '#999999',
+  gray500: '#666666',
+  gray600: '#757575',   
+  gray700: '#616161',   
+  gray800: '#424242',   
+  gray900: '#212121',   
+  black: '#000000',
+},
+
+  // ===== BACKGROUNDS (NUEVO) =====
+  backgrounds: {
+    default: '#F5F5F5',
+    elevated: '#FFFFFF',
+    dark: '#1A1A1A',
   },
 
-  // ===== COLORES ESPECIALES =====
+  // ===== COMPATIBILIDAD =====
   special: {
-    gold: '#FFD700',      // Badge "Activa"
-    overlay: 'rgba(0, 0, 0, 0.5)',  // Modal overlay
+    gold: '#FFD700',
+    overlay: 'rgba(0, 0, 0, 0.5)',
   },
 };
 
-/**
- * Alias para compatibilidad
- * (puedes usar nombres más cortos si prefieres)
- */
 export const c = colors;
