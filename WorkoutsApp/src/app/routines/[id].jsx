@@ -9,7 +9,7 @@ import React from "react";
 
 // Design System
 import { colors, spacing, radius, Icon, shadows } from '@/design-systems/tokens';
-import { Text, Button, Card } from '@/design-systems/components';
+import { Text, Button, Card, ExerciseCard } from '@/design-systems/components';
 
 LogBox.ignoreLogs([
     'VirtualizedLists should never be nested'
@@ -330,14 +330,15 @@ export default function RoutineDetailScreen() {
                                         💪 Ejercicios:
                                     </Text>
                                     {day.exercises?.sort((a, b) => a.order - b.order).map((exercise, idx) => (
-                                        <Pressable
+                                        <ExerciseCard
                                             key={exercise._id}
-                                            style={({ pressed }) => [
-                                                styles.exerciseItem,
-                                                pressed && styles.exerciseItemPressed
-                                            ]}
-                                            onPress={() => {
-                                                // Navegar a vista de ejercicio
+                                            exercise={exercise}
+                                            index={idx + 1}
+                                            variant="default"
+                                            current={sessionNum === currentSession && workoutProgress?.exerciseIndex === idx}
+                                            completed={sessionNum < currentSession}
+                                            disabled={false}
+                                            onPress={(ex) => {
                                                 router.push({
                                                     pathname: '/workout',
                                                     params: {
@@ -351,23 +352,7 @@ export default function RoutineDetailScreen() {
                                                     }
                                                 });
                                             }}
-                                        >
-                                            <Text variant="body" color="neutral.gray600">
-                                                {idx + 1}. {exercise.name}
-                                            </Text>
-                                            <Text variant="bodySmall" color="primary.main">
-                                                {exercise.targetSets} × {exercise.targetReps} reps
-                                            </Text>
-                                            <Text variant="caption" color="neutral.gray400">
-                                                {exercise.muscle} • {exercise.equipment}
-                                                {exercise.restTime ? ` • ${exercise.restTime}s descanso` : ''}
-                                            </Text>
-
-                                            {/* Indicador de clickeable */}
-                                            <Text variant="caption" color="primary.main" style={{ marginTop: spacing.xs }}>
-                                                👉 Tap para ver detalles
-                                            </Text>
-                                        </Pressable>
+                                        />
                                     ))}
                                 </View>
 
@@ -458,7 +443,7 @@ const styles = StyleSheet.create({
         color: colors.neutral.white,
         opacity: 0.8,
     },
-    
+
     mainActionButton: {
         marginBottom: spacing.sm,
         ...shadows.lg,
@@ -527,17 +512,8 @@ const styles = StyleSheet.create({
     exercisesContainer: {
         marginBottom: spacing.md,
     },
-    exerciseItem: {
-        marginBottom: spacing.md,
-        paddingLeft: spacing.sm,
-    },
-    exerciseItem: {
-        marginBottom: spacing.md,
-        paddingLeft: spacing.sm,
-    },
-    exerciseItemPressed: {  // ← NUEVO
-        opacity: 0.6,
-    }, inlineProgress: {
+     
+    inlineProgress: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,

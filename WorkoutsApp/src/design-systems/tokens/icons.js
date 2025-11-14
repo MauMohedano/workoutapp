@@ -11,12 +11,12 @@ export const iconMap = {
   home: 'home-outline',
   back: 'arrow-back',
   close: 'close',
-  
+
   // Acciones
   add: 'add-circle-outline',
   edit: 'create-outline',
   delete: 'trash-outline',
-  
+
   // Fitness
   workout: 'fitness-outline',
   dumbbell: 'barbell-outline',
@@ -25,10 +25,15 @@ export const iconMap = {
   flame: 'flame-outline',
   star: 'star-outline',
   starActive: 'star',
-  
+
   // Estados
   error: 'alert-circle-outline',
   success: 'checkmark-circle-outline',
+
+  // Reproducción
+  play: 'play-outline',
+  'play-circle': 'play-circle-outline',
+  'play-skip-forward': 'play-skip-forward-outline',
 };
 
 export const iconSizes = {
@@ -40,16 +45,16 @@ export const iconSizes = {
   xxl: 48,
 };
 
-export const Icon = ({ 
-  name, 
-  size = 'md', 
+export const Icon = ({
+  name,
+  size = 'md',
   color,
   style,
-  ...props 
+  ...props
 }) => {
   const iconName = iconMap[name] || name;
   const iconSize = typeof size === 'string' ? iconSizes[size] : size;
-  
+
   let iconColor = color;
   if (typeof color === 'string' && color.includes('.')) {
     const parts = color.split('.');
@@ -59,9 +64,9 @@ export const Icon = ({
     }
     iconColor = resolved;
   }
-  
+
   return (
-    <Ionicons 
+    <Ionicons
       name={iconName}
       size={iconSize}
       color={iconColor || colors.neutral.gray500}
