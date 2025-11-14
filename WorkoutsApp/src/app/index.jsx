@@ -1,18 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View, Pressable } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { getRoutines } from '../../src/api/routineApi';
+import { getRoutines } from '../api/routineApi';
 import { Link } from 'expo-router';
 import { colors, spacing, typography, radius, shadows, Icon } from '@/design-systems/tokens';
-import { Text, Button, Card } from '@/design-systems/components';
-
-
+import { Text, Button, Card, CircularProgress } from '@/design-systems/components';
 
 export default function HomeScreen() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['routines'],
     queryFn: getRoutines
-  })
+  });
 
   if (isLoading) {
     return (
@@ -32,114 +30,206 @@ export default function HomeScreen() {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Icon name="error" size="xxl" color="danger.main" />
+        <View style={styles.errorIcon}>
+          <Icon name="error" size={48} color={colors.danger.main} />
+        </View>
         <Text
           variant="h3"
           color="danger.main"
           align="center"
-          style={{ marginTop: spacing.md }}
+          style={{ marginTop: spacing.md, marginBottom: spacing.sm }}
         >
-          Error: {error.message}
+          Error al cargar
         </Text>
+        <Text
+          variant="body"
+          color="neutral.gray500"
+          align="center"
+          style={{ marginBottom: spacing.lg, maxWidth: 280 }}
+        >
+          {error.message}
+        </Text>
+        <Button
+          variant="secondary"
+          size="md"
+          icon="refresh"
+          onPress={() => window.location.reload()}
+        >
+          Reintentar
+        </Button>
       </View>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <View style={styles.emptyIcon}>
-          <Icon name="dumbbell" size="xxl" color="primary.main" />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View>
+              <Text variant="overline" color="neutral.gray500">
+                MIS RUTINAS
+              </Text>
+              <Text variant="h1" color="neutral.gray900">
+                Workout App
+              </Text>
+            </View>
+          </View>
         </View>
 
-        <Text
-          variant="h2"
-          color="neutral.gray800"
-          align="center"
-          style={{ marginBottom: spacing.sm }}
-        >
-          ¡Comienza tu viaje fitness!
-        </Text>
+        {/* Empty State */}
+        <View style={styles.centerContainer}>
+          <View style={styles.emptyIcon}>
+            <Icon name="dumbbell" size={64} color={colors.primary.main} />
+          </View>
 
-        <Text
-          variant="bodyMedium"
-          color="neutral.gray500"
-          align="center"
-          style={{ marginBottom: spacing.xl, maxWidth: 280 }}
-        >
-          Crea tu primera rutina y empieza a alcanzar tus objetivos
-        </Text>
+          <Text
+            variant="h2"
+            color="neutral.gray800"
+            align="center"
+            style={{ marginBottom: spacing.sm }}
+          >
+            ¡Comienza tu viaje fitness!
+          </Text>
 
-        <Button
-          variant="primary"
-          size="lg"
-          onPress={() => console.log('Crear rutina')}
-        >
-          Crear Rutina
-        </Button>
+          <Text
+            variant="body"
+            color="neutral.gray500"
+            align="center"
+            style={{ marginBottom: spacing.xl, maxWidth: 300, lineHeight: 24 }}
+          >
+            Crea tu primera rutina y empieza a alcanzar tus objetivos de entrenamiento
+          </Text>
+
+          <Button
+            variant="primary"
+            size="lg"
+            icon="add"
+            onPress={() => console.log('Crear rutina')}
+          >
+            Crear Mi Primera Rutina
+          </Button>
+        </View>
+
+        <StatusBar style="auto" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {/* Header con botón crear */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View>
+            <Text variant="overline" color="neutral.gray500">
+              MIS RUTINAS
+            </Text>
+            <Text variant="h1" color="neutral.gray900">
+              {data.length} {data.length === 1 ? 'Rutina' : 'Rutinas'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Lista de rutinas */}
       <FlatList
         data={data}
         contentContainerStyle={styles.listContent}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <Link href={`/routines/${item._id}`} asChild>
-            <Card shadow="lg">
-              {/* Header con nombre y badge */}
-              <View style={styles.routineHeader}>
-                <Text variant="h3" color="neutral.gray800" style={styles.routineName}>
-                  {item.name}
-                </Text>
+            <Pressable>
+              <Card shadow="lg" style={styles.routineCard}>
+                {/* Header de la card */}
+                <View style={styles.routineCardHeader}>
+                  {/* Progreso circular */}
+                  <CircularProgress
+                    percentage={0} // TODO: Calcular progreso real
+                    size={56}
+                    strokeWidth={5}
+                    showPercentage={true}
+                  />
 
-                {item.isActive && (
-                  <View style={styles.activeBadge}>
-                    <Icon name="starActive" size={16} color={colors.neutral.gray900} />
-                    <Text variant="captionBold" color="neutral.gray900">
-                      ACTIVA
+                  {/* Info principal */}
+                  <View style={styles.routineCardInfo}>
+                    <View style={styles.routineCardTitleRow}>
+                      <Text variant="h3" color="neutral.gray800" style={styles.routineName}>
+                        {item.name}
+                      </Text>
+
+                      {item.isActive && (
+                        <View style={styles.activeBadge}>
+                          <Icon name="starActive" size={14} color={colors.neutral.gray900} />
+                          <Text variant="caption" style={styles.activeBadgeText}>
+                            ACTIVA
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {item.description && (
+                      <Text
+                        variant="bodySmall"
+                        color="neutral.gray500"
+                        numberOfLines={1}
+                        style={{ marginTop: 2 }}
+                      >
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Stats */}
+                <View style={styles.routineStats}>
+                  <View style={styles.statItem}>
+                    <Icon name="calendar" size={16} color={colors.primary.main} />
+                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                      {item.days?.length || 0} días
                     </Text>
                   </View>
-                )}
-              </View>
 
-              {/* Descripción */}
-              {item.description ? (
-                <Text
-                  variant="bodySmall"
-                  color="neutral.gray500"
-                  style={{ marginBottom: spacing.md }}
-                  numberOfLines={2}
-                >
-                  {item.description}
-                </Text>
-              ) : null}
+                  <View style={styles.statDivider} />
 
-              {/* Stats con iconos */}
-              <View style={styles.routineStats}>
-                <View style={styles.statItem}>
-                  <Icon name="calendar" size={18} color={colors.primary.main} />
-                  <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                    {item.days?.length || 0} días
-                  </Text>
+                  <View style={styles.statItem}>
+                    <Icon name="dumbbell" size={16} color={colors.primary.main} />
+                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                      {item.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0} ejercicios
+                    </Text>
+                  </View>
+
+                  <View style={styles.statDivider} />
+
+                  <View style={styles.statItem}>
+                    <Icon name="flame" size={16} color={colors.warning.main} />
+                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                      0/21 sesiones
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={styles.statDivider} />
-
-                <View style={styles.statItem}>
-                  <Icon name="dumbbell" size={18} color={colors.primary.main} />
-                  <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                    {item.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0} ejercicios
+                {/* Footer con chevron */}
+                <View style={styles.routineCardFooter}>
+                  <Text variant="bodySmall" color="primary.main" style={{ fontWeight: '600' }}>
+                    Ver rutina
                   </Text>
+                  <Icon name="chevronRight" size={20} color={colors.primary.main} />
                 </View>
-              </View>
-            </Card>
+              </Card>
+            </Pressable>
           </Link>
         )}
       />
+
+      {/* FAB (Floating Action Button) */}
+      <Pressable
+        style={styles.fab}
+        onPress={() => console.log('Crear rutina desde FAB')}
+      >
+        <Icon name="add" size={28} color={colors.neutral.white} />
+      </Pressable>
 
       <StatusBar style="auto" />
     </View>
@@ -156,67 +246,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-    backgroundColor: colors.neutral.gray100,
   },
+
+  // Header
+  header: {
+    backgroundColor: colors.neutral.white,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.base,
+    paddingHorizontal: spacing.base,
+    ...shadows.sm,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
+  // Lista
   listContent: {
     gap: spacing.md,
     padding: spacing.base,
+    paddingBottom: 100, // Espacio para el FAB
   },
 
-  // Empty state
-  emptyIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary.main + '20', // 20% opacity
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
+  // Routine Card
+  routineCard: {
+    padding: spacing.base,
+    gap: spacing.md,
   },
-
-  // Routine card header
-  routineHeader: {
+  routineCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  routineCardInfo: {
+    flex: 1,
+  },
+  routineCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
+    flexWrap: 'wrap',
   },
   routineName: {
     flex: 1,
   },
 
-  // Badge "Activa" con glow dorado
+  // Badge activa
   activeBadge: {
     backgroundColor: colors.accent.main,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs - 2,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
     borderRadius: radius.base,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    // Shadow para iOS
     shadowColor: colors.accent.main,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 4,
-    // Elevation para Android
     elevation: 4,
+  },
+  activeBadgeText: {
+    color: colors.neutral.gray900,
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.5,
   },
 
   // Stats
   routineStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.gray200,
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   statText: {
     fontWeight: '500',
@@ -225,5 +336,52 @@ const styles = StyleSheet.create({
     width: 1,
     height: 14,
     backgroundColor: colors.neutral.gray300,
+  },
+
+  // Footer
+  routineCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.gray200,
+  },
+
+  // Empty state
+  emptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.primary.main + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+
+  // Error state
+  errorIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.danger.main + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // FAB (Floating Action Button)
+  fab: {
+    position: 'absolute',
+    right: spacing.base,
+    bottom: spacing.base,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.xl,
+    elevation: 8,
   },
 });
