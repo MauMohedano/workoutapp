@@ -11,6 +11,10 @@ export const iconMap = {
   home: 'home-outline',
   back: 'arrow-back',
   close: 'close',
+   'chevron-up': 'chevron-up',
+  'chevron-down': 'chevron-down',
+  'snow': 'snow-outline', 
+  'chevron-right': 'chevron-forward',
 
   // Acciones
   add: 'add-circle-outline',
@@ -34,6 +38,8 @@ export const iconMap = {
   play: 'play-outline',
   'play-circle': 'play-circle-outline',
   'play-skip-forward': 'play-skip-forward-outline',
+
+ 
 };
 
 export const iconSizes = {

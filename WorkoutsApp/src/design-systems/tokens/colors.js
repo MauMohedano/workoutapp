@@ -42,19 +42,19 @@ export const colors = {
 
   // ===== COLORES NEUTROS =====
   neutral: {
-  white: '#FFFFFF',
-  gray50: '#FAFAFA',
-  gray100: '#F5F5F5',
-  gray200: '#E0E0E0',
-  gray300: '#CCCCCC',
-  gray400: '#999999',
-  gray500: '#666666',
-  gray600: '#757575',   
-  gray700: '#616161',   
-  gray800: '#424242',   
-  gray900: '#212121',   
-  black: '#000000',
-},
+    white: '#FFFFFF',
+    gray50: '#FAFAFA',
+    gray100: '#F5F5F5',
+    gray200: '#E0E0E0',
+    gray300: '#CCCCCC',
+    gray400: '#999999',
+    gray500: '#666666',
+    gray600: '#757575',
+    gray700: '#616161',
+    gray800: '#424242',
+    gray900: '#212121',
+    black: '#000000',
+  },
 
   // ===== BACKGROUNDS (NUEVO) =====
   backgrounds: {
@@ -67,6 +67,12 @@ export const colors = {
   special: {
     gold: '#FFD700',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  info: {
+    main: '#3B82F6',     // Azul
+    light: '#60A5FA',
+    dark: '#1E40AF',
   },
 };
 
