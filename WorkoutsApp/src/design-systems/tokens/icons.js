@@ -21,6 +21,8 @@ export const iconMap = {
   edit: 'create-outline',
   delete: 'trash-outline',
 
+  person: 'person-outline',
+
   // Fitness
   workout: 'fitness-outline',
   dumbbell: 'barbell-outline',
@@ -38,8 +40,14 @@ export const iconMap = {
   play: 'play-outline',
   'play-circle': 'play-circle-outline',
   'play-skip-forward': 'play-skip-forward-outline',
+   
 
- 
+   history: 'time-outline',        
+  copy: 'copy-outline',         
+  target: 'radio-button-on',     
+  remove: 'remove-circle',       
+ trophy: 'trophy-outline',       
+  checkmark: 'checkmark', 
 };
 
 export const iconSizes = {

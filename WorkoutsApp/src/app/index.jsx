@@ -12,6 +12,7 @@ export default function HomeScreen() {
     queryFn: getRoutines
   });
 
+  // ===== LOADING STATE =====
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -27,6 +28,7 @@ export default function HomeScreen() {
     );
   }
 
+  // ===== ERROR STATE =====
   if (error) {
     return (
       <View style={styles.centerContainer}>
@@ -61,24 +63,68 @@ export default function HomeScreen() {
     );
   }
 
-  if (!data || data.length === 0) {
-    return (
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text variant="overline" color="neutral.gray500">
-                MIS RUTINAS
-              </Text>
-              <Text variant="h1" color="neutral.gray900">
-                Workout App
-              </Text>
-            </View>
+  // ===== VISTA PRINCIPAL (con o sin rutinas) =====
+  return (
+    <View style={styles.container}>
+      {/* Header Profesional - ÚNICO para ambos casos */}
+      <View style={styles.header}>
+        {/* Saludo */}
+        <View style={styles.greetingSection}>
+          <View style={styles.avatarPlaceholder}>
+            <Icon name="person" size={24} color={colors.primary.main} />
+          </View>
+          <View style={styles.greetingText}>
+            <Text variant="overline" color="neutral.gray500">
+              BIENVENIDO
+            </Text>
+            <Text variant="h2" color="neutral.gray900">
+              {data && data.length > 0 ? '¡Listo para entrenar! 💪' : '¡Comencemos! 💪'}
+            </Text>
           </View>
         </View>
 
-        {/* Empty State */}
+        {/* Stats Cards */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text variant="h2" color="primary.main">
+              {data?.length || 0}
+            </Text>
+            <Text variant="caption" color="neutral.gray500">
+              {data?.length === 1 ? 'Rutina' : 'Rutinas'}
+            </Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text variant="h2" color="primary.main">
+              {data?.reduce((sum, r) => sum + (r.days?.length || 0), 0) || 0}
+            </Text>
+            <Text variant="caption" color="neutral.gray500">
+              Días
+            </Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text variant="h2" color="primary.main">
+              0
+            </Text>
+            <Text variant="caption" color="neutral.gray500">
+              Semanas
+            </Text>
+          </View>
+        </View>
+
+        {/* Título de sección */}
+        <View style={styles.sectionTitle}>
+          <Icon name="dumbbell" size={20} color={colors.neutral.gray600} />
+          <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
+            Mis Rutinas
+          </Text>
+        </View>
+      </View>
+
+      {/* CONDICIONAL: Empty State o Lista */}
+      {!data || data.length === 0 ? (
+        // Empty State
         <View style={styles.centerContainer}>
           <View style={styles.emptyIcon}>
             <Icon name="dumbbell" size={64} color={colors.primary.main} />
@@ -111,125 +157,107 @@ export default function HomeScreen() {
             Crear Mi Primera Rutina
           </Button>
         </View>
+      ) : (
+        // Lista de rutinas
+        <>
+          <FlatList
+            data={data}
+            contentContainerStyle={styles.listContent}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <Link href={`/routines/${item._id}`} asChild>
+                <Pressable>
+                  <Card shadow="lg" style={styles.routineCard}>
+                    {/* Header de la card */}
+                    <View style={styles.routineCardHeader}>
+                      {/* Progreso circular */}
+                      <CircularProgress
+                        percentage={0}
+                        size={56}
+                        strokeWidth={5}
+                        showPercentage={true}
+                      />
 
-        <StatusBar style="auto" />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      {/* Header con botón crear */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text variant="overline" color="neutral.gray500">
-              MIS RUTINAS
-            </Text>
-            <Text variant="h1" color="neutral.gray900">
-              {data.length} {data.length === 1 ? 'Rutina' : 'Rutinas'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Lista de rutinas */}
-      <FlatList
-        data={data}
-        contentContainerStyle={styles.listContent}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <Link href={`/routines/${item._id}`} asChild>
-            <Pressable>
-              <Card shadow="lg" style={styles.routineCard}>
-                {/* Header de la card */}
-                <View style={styles.routineCardHeader}>
-                  {/* Progreso circular */}
-                  <CircularProgress
-                    percentage={0} // TODO: Calcular progreso real
-                    size={56}
-                    strokeWidth={5}
-                    showPercentage={true}
-                  />
-
-                  {/* Info principal */}
-                  <View style={styles.routineCardInfo}>
-                    <View style={styles.routineCardTitleRow}>
-                      <Text variant="h3" color="neutral.gray800" style={styles.routineName}>
-                        {item.name}
-                      </Text>
-
-                      {item.isActive && (
-                        <View style={styles.activeBadge}>
-                          <Icon name="starActive" size={14} color={colors.neutral.gray900} />
-                          <Text variant="caption" style={styles.activeBadgeText}>
-                            ACTIVA
+                      {/* Info principal */}
+                      <View style={styles.routineCardInfo}>
+                        <View style={styles.routineCardTitleRow}>
+                          <Text variant="h3" color="neutral.gray800" style={styles.routineName}>
+                            {item.name}
                           </Text>
+
+                          {item.isActive && (
+                            <View style={styles.activeBadge}>
+                              <Icon name="starActive" size={14} color={colors.neutral.gray900} />
+                              <Text variant="caption" style={styles.activeBadgeText}>
+                                ACTIVA
+                              </Text>
+                            </View>
+                          )}
                         </View>
-                      )}
+
+                        {item.description && (
+                          <Text
+                            variant="bodySmall"
+                            color="neutral.gray500"
+                            numberOfLines={1}
+                            style={{ marginTop: 2 }}
+                          >
+                            {item.description}
+                          </Text>
+                        )}
+                      </View>
                     </View>
 
-                    {item.description && (
-                      <Text
-                        variant="bodySmall"
-                        color="neutral.gray500"
-                        numberOfLines={1}
-                        style={{ marginTop: 2 }}
-                      >
-                        {item.description}
+                    {/* Stats */}
+                    <View style={styles.routineStats}>
+                      <View style={styles.statItem}>
+                        <Icon name="calendar" size={16} color={colors.primary.main} />
+                        <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                          {item.days?.length || 0} días
+                        </Text>
+                      </View>
+
+                      <View style={styles.statDivider} />
+
+                      <View style={styles.statItem}>
+                        <Icon name="dumbbell" size={16} color={colors.primary.main} />
+                        <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                          {item.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0} ejercicios
+                        </Text>
+                      </View>
+
+                      <View style={styles.statDivider} />
+
+                      <View style={styles.statItem}>
+                        <Icon name="flame" size={16} color={colors.warning.main} />
+                        <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
+                          0/21 sesiones
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Footer con chevron */}
+                    <View style={styles.routineCardFooter}>
+                      <Text variant="bodySmall" color="primary.main" style={{ fontWeight: '600' }}>
+                        Ver rutina
                       </Text>
-                    )}
-                  </View>
-                </View>
+                      <Icon name="chevronRight" size={20} color={colors.primary.main} />
+                    </View>
+                  </Card>
+                </Pressable>
+              </Link>
+            )}
+          />
 
-                {/* Stats */}
-                <View style={styles.routineStats}>
-                  <View style={styles.statItem}>
-                    <Icon name="calendar" size={16} color={colors.primary.main} />
-                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                      {item.days?.length || 0} días
-                    </Text>
-                  </View>
-
-                  <View style={styles.statDivider} />
-
-                  <View style={styles.statItem}>
-                    <Icon name="dumbbell" size={16} color={colors.primary.main} />
-                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                      {item.days?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0} ejercicios
-                    </Text>
-                  </View>
-
-                  <View style={styles.statDivider} />
-
-                  <View style={styles.statItem}>
-                    <Icon name="flame" size={16} color={colors.warning.main} />
-                    <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                      0/21 sesiones
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Footer con chevron */}
-                <View style={styles.routineCardFooter}>
-                  <Text variant="bodySmall" color="primary.main" style={{ fontWeight: '600' }}>
-                    Ver rutina
-                  </Text>
-                  <Icon name="chevronRight" size={20} color={colors.primary.main} />
-                </View>
-              </Card>
-            </Pressable>
-          </Link>
-        )}
-      />
-
-      {/* FAB (Floating Action Button) */}
-      <Pressable
-        style={styles.fab}
-        onPress={() => console.log('Crear rutina desde FAB')}
-      >
-        <Icon name="add" size={28} color={colors.neutral.white} />
-      </Pressable>
+          {/* FAB */}
+          <Pressable
+            style={styles.fab}
+            onPress={() => console.log('Crear rutina desde FAB')}
+          >
+            <Icon name="add" size={28} color={colors.neutral.white} />
+          </Pressable>
+        </>
+      )}
 
       <StatusBar style="auto" />
     </View>
@@ -256,12 +284,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     ...shadows.sm,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  
+
+
   // Lista
   listContent: {
     gap: spacing.md,
@@ -383,5 +407,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.xl,
     elevation: 8,
+  },
+  // ===== HEADER PROFESIONAL =====
+  header: {
+    backgroundColor: colors.neutral.white,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.base,
+    paddingHorizontal: spacing.base,
+    gap: spacing.lg,
+    ...shadows.sm,
+  },
+
+  // Greeting section
+  greetingSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary.main + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary.main + '30',
+  },
+  greetingText: {
+    flex: 1,
+    gap: 2,
+  },
+
+  // Stats row
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.neutral.gray50,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    gap: spacing.xs - 2,
+    borderWidth: 1,
+    borderColor: colors.neutral.gray200,
+  },
+
+  // Section title
+  sectionTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
 });
