@@ -7,6 +7,7 @@ const exerciseRoutes = require('./src/routes/exerciseRoutes');
 const ninjaRoutes = require('./src/routes/ninjaRoutes')
 const routineRoutes = require('./src/routes/routineRoutes');
 const sessionProgressRoutes = require('./src/routes/sessionProgressRoutes');
+const exerciseCatalogRoutes = require('./src/routes/exerciseCatalogRoutes');
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,7 @@ app.use('/api/exercises', exerciseRoutes);
 app.use('/api/ninja', ninjaRoutes);
 app.use('/api/routines', routineRoutes);
 app.use('/api/session-progress', sessionProgressRoutes);
+app.use('/api/catalog', exerciseCatalogRoutes)
 
 // Conexión a Mongo
 mongoose.connect(process.env.MONGO_URI)
@@ -27,6 +29,7 @@ mongoose.connect(process.env.MONGO_URI)
       console.log('📝 Sets API: http://localhost:3003/api/exercises');
       console.log('🔍 Ninja API: http://localhost:3003/api/ninja/exercises');
       console.log('💪 Routines API: http://localhost:3003/api/routines');
+       console.log('📚 Catalog API: http://localhost:3003/api/catalog/search')
     });
   })
   .catch(err => console.error(err));
