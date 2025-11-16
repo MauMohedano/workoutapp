@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Pressable, ActivityIndicator, StyleSheet, View, Animated } from 'react-native';
 import { colors } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { radius } from '../tokens/radius';
@@ -36,6 +36,24 @@ export default function Button({
   style,
   ...props
 }) {
+
+  const scaleAnim = new Animated.Value(1);
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 50,
+      friction: 3,
+    }).start();
+  };
+
   const buttonStyles = [
     styles.base,
     styles[variant],
@@ -51,17 +69,20 @@ export default function Button({
   const resolvedIconSize = iconSize || getIconSize(size);
 
   return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
     <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+      disabled={disabled || loading}
+      {...props}
       style={({ pressed }) => [
         buttonStyles,
         pressed && !disabled && !loading && styles.pressed,
       ]}
-      onPress={onPress}
-      disabled={disabled || loading}
-      {...props}
     >
       {loading ? (
-        <ActivityIndicator 
+        <ActivityIndicator
           color={textColor}
           size={size === 'sm' ? 'small' : 'default'}
         />
@@ -69,28 +90,28 @@ export default function Button({
         <View style={styles.content}>
           {/* Icono a la izquierda */}
           {icon && iconPosition === 'left' && (
-            <Icon 
-              name={icon} 
-              size={resolvedIconSize} 
+            <Icon
+              name={icon}
+              size={resolvedIconSize}
               color={textColor}
               style={{ marginRight: spacing.xs }}
             />
           )}
-          
+
           {/* Texto */}
-          <Text 
+          <Text
             variant={textVariant}
             color={textColor}
             style={styles.text}
           >
             {children}
           </Text>
-          
+
           {/* Icono a la derecha */}
           {icon && iconPosition === 'right' && (
-            <Icon 
-              name={icon} 
-              size={resolvedIconSize} 
+            <Icon
+              name={icon}
+              size={resolvedIconSize}
               color={textColor}
               style={{ marginLeft: spacing.xs }}
             />
@@ -98,6 +119,7 @@ export default function Button({
         </View>
       )}
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -105,7 +127,7 @@ export default function Button({
 
 function getTextColor(variant, disabled) {
   if (disabled) return colors.neutral.gray400;
-  
+
   const colorMap = {
     primary: colors.neutral.white,
     secondary: colors.primary.main,
@@ -144,14 +166,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  
+
   // Content wrapper (para alinear icono + texto)
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   // Variants
   primary: {
     backgroundColor: colors.primary.main,
@@ -170,7 +192,7 @@ const styles = StyleSheet.create({
   warning: {
     backgroundColor: colors.warning.main,
   },
-  
+
   // Sizes
   size_sm: {
     paddingVertical: spacing.sm,
@@ -187,12 +209,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     minHeight: 56,
   },
-  
+
   // Text
   text: {
     textAlign: 'center',
   },
-  
+
   // States
   pressed: {
     opacity: 0.85,

@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getRoutineById } from '../../api/routineApi';
@@ -348,8 +348,15 @@ export default function WorkoutScreen() {
 
                 if (!stats) return null;
 
+                const fadeAnim = new Animated.Value(0);
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 600,
+                    useNativeDriver: true,
+                }).start();
+
                 return (
-                    <View style={styles.statsContainer}>
+                    <Animated.View style={[styles.statsContainer, { opacity: fadeAnim }]}>
                         <Text
                             variant="bodyMedium"
                             color="neutral.gray800"
@@ -454,7 +461,7 @@ export default function WorkoutScreen() {
                                 </View>
                             )}
                         </View>
-                    </View>
+                    </Animated.View>
                 );
             })()}
         </ScrollView>

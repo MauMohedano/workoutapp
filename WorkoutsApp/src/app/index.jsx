@@ -1,3 +1,4 @@
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, StyleSheet, View, Pressable } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import { colors, spacing, typography, radius, shadows, Icon } from '@/design-sys
 import { Text, Button, Card, CircularProgress } from '@/design-systems/components';
 
 export default function HomeScreen() {
+   const router = useRouter();
   const { data, isLoading, error } = useQuery({
     queryKey: ['routines'],
     queryFn: getRoutines
@@ -252,7 +254,7 @@ export default function HomeScreen() {
           {/* FAB */}
           <Pressable
             style={styles.fab}
-            onPress={() => console.log('Crear rutina desde FAB')}
+            onPress={() => router.push('/create-routine')}
           >
             <Icon name="add" size={28} color={colors.neutral.white} />
           </Pressable>

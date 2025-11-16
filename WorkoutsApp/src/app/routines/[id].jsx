@@ -1,16 +1,16 @@
-import { View, StyleSheet, ActivityIndicator, Pressable, Alert, FlatList, LogBox } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Pressable, Alert, FlatList, LogBox, Animated } from "react-native";
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getRoutineById } from "../../api/routineApi";
 import { useState, useEffect } from "react";
 import { useSessionProgress } from "../../hooks/useSessionProgress";
+import { 
+  getDayForSession, 
+  getSessionStatus, 
+  hasExercises, 
+  getWorkoutStartIndex 
+} from "../../utils/sessionHelpers";
 import { getWorkoutProgress } from "../../utils/workoutProgressCache";
-import {
-    getSessionProgress,
-    getDayForSession,
-    getWorkoutStartIndex,
-    hasExercises
-} from '../../utils/sessionHelpers';
 import React from "react";
 
 // Design System
@@ -37,6 +37,15 @@ export default function RoutineDetailScreen() {
 
     const [workoutProgress, setWorkoutProgress] = useState(null);
     const [loadingProgress, setLoadingProgress] = useState(true);
+
+     // Estado para animaciones
+   const [expandedAnimations] = useState(() => {
+    const animations = {};
+    for (let i = 1; i <= 21; i++) {
+        animations[`session-${i}`] = new Animated.Value(0);
+    }
+    return animations;
+});
 
     useFocusEffect(
         React.useCallback(() => {
@@ -90,7 +99,17 @@ export default function RoutineDetailScreen() {
     }
 
     const toggleDay = (dayId) => {
-        setExpandedDayId(expandedDayId === dayId ? null : dayId);
+        const isExpanding = expandedDayId !== dayId;
+
+        setExpandedDayId(isExpanding ? dayId : null);
+
+        // Animar
+        Animated.spring(expandedAnimations[dayId], {
+            toValue: isExpanding ? 1 : 0,
+            useNativeDriver: false,
+            tension: 50,
+            friction: 8,
+        }).start();
     };
 
     const startWorkout = (sessionNumber) => {
@@ -160,6 +179,7 @@ export default function RoutineDetailScreen() {
     const currentDayIndex = ((currentSession - 1) % totalDays);
     const currentWeek = Math.ceil(currentSession / totalDays);
     const sessionsData = Array.from({ length: 21 }, (_, i) => i + 1);
+   
 
     return (
         <FlatList
@@ -395,7 +415,18 @@ export default function RoutineDetailScreen() {
 
                         {/* Contenido expandible */}
                         {isExpanded && (
-                            <View style={styles.sessionContent}>
+                            <Animated.View
+                                style={[
+                                    styles.sessionContent,
+                                    {
+                                        opacity: expandedAnimations[`session-${sessionNum}`],
+                                        maxHeight: expandedAnimations[`session-${sessionNum}`].interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [0, 2000], // Altura máxima suficiente
+                                        }),
+                                    }
+                                ]}
+                            >
                                 {/* Barra de progreso de ejercicios (solo si tiene progreso) */}
                                 {isCurrent && workoutProgress && (
                                     <View style={styles.exerciseProgress}>
@@ -479,7 +510,7 @@ export default function RoutineDetailScreen() {
                                         ))}
                                     </View>
                                 )}
-                            </View>
+                            </Animated.View>
                         )}
                     </Card>
                 );
@@ -489,280 +520,280 @@ export default function RoutineDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ===== CONTENEDORES PRINCIPALES =====
-  container: {
-    flex: 1,
-    backgroundColor: colors.neutral.gray100,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    // ===== CONTENEDORES PRINCIPALES =====
+    container: {
+        flex: 1,
+        backgroundColor: colors.neutral.gray100,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 
-  // ===== HEADER MEJORADO =====
-  header: {
-    backgroundColor: colors.neutral.white,
-    padding: spacing.base,
-    marginBottom: spacing.sm + 2,
-  },
-  headerTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  headerDescription: {
-    marginBottom: spacing.base,
-  },
+    // ===== HEADER MEJORADO =====
+    header: {
+        backgroundColor: colors.neutral.white,
+        padding: spacing.base,
+        marginBottom: spacing.sm + 2,
+    },
+    headerTitle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+    headerDescription: {
+        marginBottom: spacing.base,
+    },
 
-  // Progress card (nuevo diseño)
-  progressCard: {
-    padding: spacing.lg,
-    backgroundColor: colors.backgrounds.elevated,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-    marginBottom: spacing.md,
-  },
+    // Progress card (nuevo diseño)
+    progressCard: {
+        padding: spacing.lg,
+        backgroundColor: colors.backgrounds.elevated,
+    },
+    progressRow: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        marginBottom: spacing.md,
+    },
 
-  // Circular progress container
-  circularProgressContainer: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  circularLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: spacing.xs - 2,
-  },
+    // Circular progress container
+    circularProgressContainer: {
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    circularLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1,
+        marginTop: spacing.xs - 2,
+    },
 
-  // Progress info
-  progressInfo: {
-    flex: 1,
-    gap: spacing.sm,
-    justifyContent: 'center',
-  },
-  currentSessionInfo: {
-    gap: 2,
-  },
-  currentDayInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs - 2,
-    backgroundColor: colors.warning.main + '15',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs - 2,
-    borderRadius: radius.base,
-    alignSelf: 'flex-start',
-  },
+    // Progress info
+    progressInfo: {
+        flex: 1,
+        gap: spacing.sm,
+        justifyContent: 'center',
+    },
+    currentSessionInfo: {
+        gap: 2,
+    },
+    currentDayInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs - 2,
+        backgroundColor: colors.warning.main + '15',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs - 2,
+        borderRadius: radius.base,
+        alignSelf: 'flex-start',
+    },
 
-  // Mini stats
-  miniStats: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  miniStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
+    // Mini stats
+    miniStats: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginTop: spacing.xs,
+    },
+    miniStat: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
 
-  // Week badge
-  weekBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs - 2,
-    backgroundColor: colors.primary.main + '15',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs - 2,
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: colors.primary.main + '30',
-  },
+    // Week badge
+    weekBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs - 2,
+        backgroundColor: colors.primary.main + '15',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs - 2,
+        borderRadius: radius.full,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: colors.primary.main + '30',
+    },
 
-  // ===== NEXT SESSION CARD =====
-  nextSessionCard: {
-    backgroundColor: colors.primary.main,
-    padding: spacing.lg,
-    marginBottom: spacing.sm + 2,
-    borderRadius: radius.xl,
-    ...shadows.xl,
-  },
-  nextSessionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  nextSessionLabel: {
-    color: colors.neutral.white,
-    opacity: 0.9,
-    letterSpacing: 1.2,
-  },
-  dayNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  dayInfo: {
-    flex: 1,
-  },
-  nextSessionDay: {
-    color: colors.neutral.white,
-    marginBottom: spacing.xs - 2,
-  },
-  sessionMetaText: {
-    color: colors.neutral.white,
-    opacity: 0.8,
-  },
+    // ===== NEXT SESSION CARD =====
+    nextSessionCard: {
+        backgroundColor: colors.primary.main,
+        padding: spacing.lg,
+        marginBottom: spacing.sm + 2,
+        borderRadius: radius.xl,
+        ...shadows.xl,
+    },
+    nextSessionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.md,
+    },
+    nextSessionLabel: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+        letterSpacing: 1.2,
+    },
+    dayNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    dayInfo: {
+        flex: 1,
+    },
+    nextSessionDay: {
+        color: colors.neutral.white,
+        marginBottom: spacing.xs - 2,
+    },
+    sessionMetaText: {
+        color: colors.neutral.white,
+        opacity: 0.8,
+    },
 
-  // Buttons
-  mainActionButton: {
-    marginBottom: spacing.sm,
-    ...shadows.lg,
-  },
-  skipButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.neutral.white + '40',
-    backgroundColor: 'transparent',
-  },
-  skipButtonText: {
-    color: colors.neutral.white,
-    opacity: 0.9,
-  },
+    // Buttons
+    mainActionButton: {
+        marginBottom: spacing.sm,
+        ...shadows.lg,
+    },
+    skipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: radius.lg,
+        borderWidth: 1.5,
+        borderColor: colors.neutral.white + '40',
+        backgroundColor: 'transparent',
+    },
+    skipButtonText: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+    },
 
-  // Inline progress
-  inlineProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: spacing.xs,
-  },
-  inlineProgressText: {
-    color: colors.neutral.white,
-    opacity: 0.9,
-    fontStyle: 'italic',
-  },
+    // Inline progress
+    inlineProgress: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: spacing.xs,
+    },
+    inlineProgressText: {
+        color: colors.neutral.white,
+        opacity: 0.9,
+        fontStyle: 'italic',
+    },
 
-  // ===== SESSIONS LIST =====
-  daysSection: {
-    padding: spacing.sm + 2,
-  },
-  sessionCard: {
-    marginBottom: spacing.md,
-    marginHorizontal: spacing.sm + 2,
-    overflow: 'hidden',
-  },
-  sessionCardCompleted: {
-    opacity: 0.85,
-  },
-  sessionCardFuture: {
-    opacity: 0.9,
-  },
+    // ===== SESSIONS LIST =====
+    daysSection: {
+        padding: spacing.sm + 2,
+    },
+    sessionCard: {
+        marginBottom: spacing.md,
+        marginHorizontal: spacing.sm + 2,
+        overflow: 'hidden',
+    },
+    sessionCardCompleted: {
+        opacity: 0.85,
+    },
+    sessionCardFuture: {
+        opacity: 0.9,
+    },
 
-  // Session header
-  sessionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-  },
-  sessionHeaderPressed: {
-    opacity: 0.7,
-    backgroundColor: colors.neutral.gray50,
-  },
+    // Session header
+    sessionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: spacing.md,
+    },
+    sessionHeaderPressed: {
+        opacity: 0.7,
+        backgroundColor: colors.neutral.gray50,
+    },
 
-  // Session left side
-  sessionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-  },
+    // Session left side
+    sessionLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
+    },
 
-  // Session info
-  sessionInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  sessionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.neutral.gray400,
-  },
+    // Session info
+    sessionInfo: {
+        flex: 1,
+        gap: 4,
+    },
+    sessionMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    metaDot: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: colors.neutral.gray400,
+    },
 
-  // Expand icon
-  expandIcon: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    // Expand icon
+    expandIcon: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 
-  // ===== SESSION CONTENT (EXPANDED) =====
-  sessionContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.md,
-  },
+    // ===== SESSION CONTENT (EXPANDED) =====
+    sessionContent: {
+        paddingHorizontal: spacing.md,
+        paddingBottom: spacing.md,
+        gap: spacing.md,
+    },
 
-  // Exercise progress bar
-  exerciseProgress: {
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary.main + '10',
-    borderRadius: radius.lg,
-    marginBottom: spacing.xs,
-  },
-  progressBarContainer: {
-    height: 6,
-    backgroundColor: colors.neutral.gray200,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.primary.main,
-    borderRadius: 3,
-  },
+    // Exercise progress bar
+    exerciseProgress: {
+        gap: spacing.xs,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.primary.main + '10',
+        borderRadius: radius.lg,
+        marginBottom: spacing.xs,
+    },
+    progressBarContainer: {
+        height: 6,
+        backgroundColor: colors.neutral.gray200,
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: colors.primary.main,
+        borderRadius: 3,
+    },
 
-  // Section blocks
-  sectionBlock: {
-    gap: spacing.xs,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.xs - 2,
-  },
-  listItem: {
-    paddingLeft: spacing.md,
-    lineHeight: 20,
-  },
+    // Section blocks
+    sectionBlock: {
+        gap: spacing.xs,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.xs - 2,
+    },
+    listItem: {
+        paddingLeft: spacing.md,
+        lineHeight: 20,
+    },
 
-  // Exercises container
-  exercisesContainer: {
-    gap: spacing.sm,
-  },
+    // Exercises container
+    exercisesContainer: {
+        gap: spacing.sm,
+    },
 });
