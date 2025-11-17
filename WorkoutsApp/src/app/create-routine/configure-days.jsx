@@ -1,8 +1,9 @@
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import ExercisePicker from '../../components/ExercisePicker';
 // API
 import { createRoutine } from '../../api/routineApi';
 
@@ -16,7 +17,7 @@ import FormInput from '../../components/FormInput';
 export default function ConfigureDaysScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  
+
   // Recibir parámetros del paso anterior
   const { routineName, description, totalDays } = useLocalSearchParams();
   const daysCount = parseInt(totalDays);
@@ -34,12 +35,15 @@ export default function ConfigureDaysScreen() {
   // Validación
   const [errors, setErrors] = useState({});
 
+  const [exercisePickerVisible, setExercisePickerVisible] = useState(false);
+  const [currentDayIndex, setCurrentDayIndex] = useState(null);
+
   // Mutation para crear rutina
   const createMutation = useMutation({
     mutationFn: createRoutine,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['routines'] });
-      
+
       Alert.alert(
         '¡Rutina Creada! 🎉',
         `"${routineName}" ha sido creada exitosamente`,
@@ -113,11 +117,39 @@ export default function ConfigureDaysScreen() {
   };
 
   const navigateToAddExercises = (dayIndex) => {
-    // TODO: Implementar en siguiente paso
+    setCurrentDayIndex(dayIndex);
+    setExercisePickerVisible(true);
+  };
+
+  const handleSelectExercise = (exercise) => {
+    // Agregar ejercicio al día actual
+    const newDays = [...days];
+    const newExercise = {
+      id: `exercise-${Date.now()}`,
+      name: exercise.name,
+      muscle: exercise.muscle,
+      equipment: exercise.equipment,
+      targetSets: exercise.defaultSets || 3,
+      targetReps: exercise.defaultReps || 10,
+      restTime: exercise.defaultRest || 90,
+      order: newDays[currentDayIndex].exercises.length + 1,
+    };
+
+    newDays[currentDayIndex].exercises.push(newExercise);
+    setDays(newDays);
+
     Alert.alert(
-      'Próximamente',
-      'La función de agregar ejercicios estará disponible pronto. Por ahora puedes crear la rutina vacía.'
+      'Ejercicio Agregado ✅',
+      `${exercise.name} agregado a ${newDays[currentDayIndex].name || `Día ${currentDayIndex + 1}`}`
     );
+  };
+
+  const removeExercise = (dayIndex, exerciseId) => {
+    const newDays = [...days];
+    newDays[dayIndex].exercises = newDays[dayIndex].exercises.filter(
+      ex => ex.id !== exerciseId
+    );
+    setDays(newDays);
   };
 
   const getDayPlaceholder = (index) => {
@@ -198,20 +230,48 @@ export default function ConfigureDaysScreen() {
             </View>
 
             {/* Exercises count */}
-            <View style={styles.exercisesRow}>
-              <Icon name="barbell" size={16} color={colors.neutral.gray500} />
-              <Text variant="bodySmall" color="neutral.gray600">
-                {day.exercises.length} ejercicios
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="add"
-                onPress={() => navigateToAddExercises(index)}
-                style={styles.addButton}
-              >
-                Agregar ejercicios
-              </Button>
+            {/* Exercises section */}
+            <View style={styles.exercisesSection}>
+              <View style={styles.exercisesHeader}>
+                <View style={styles.exercisesCount}>
+                  <Icon name="barbell" size={16} color={colors.neutral.gray500} />
+                  <Text variant="bodySmall" color="neutral.gray600">
+                    {day.exercises.length} ejercicio{day.exercises.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="add"
+                  onPress={() => navigateToAddExercises(index)}
+                >
+                  Agregar
+                </Button>
+              </View>
+
+              {/* Lista de ejercicios agregados */}
+              {day.exercises.length > 0 && (
+                <View style={styles.exercisesList}>
+                  {day.exercises.map((exercise) => (
+                    <View key={exercise.id} style={styles.exerciseItem}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodySmall" color="neutral.gray800" bold>
+                          • {exercise.name}
+                        </Text>
+                        <Text variant="caption" color="neutral.gray500">
+                          {exercise.targetSets}×{exercise.targetReps} • {exercise.restTime}s rest
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => removeExercise(index, exercise.id)}
+                        style={styles.removeButton}
+                      >
+                        <Icon name="trash" size={16} color={colors.danger.main} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </Card>
         ))}
@@ -249,6 +309,17 @@ export default function ConfigureDaysScreen() {
           Crear Rutina
         </Button>
       </View>
+      {/* Exercise Picker Modal */}
+      <ExercisePicker
+        visible={exercisePickerVisible}
+        onClose={() => setExercisePickerVisible(false)}
+        onSelectExercise={handleSelectExercise}
+        selectedExerciseIds={
+          currentDayIndex !== null
+            ? days[currentDayIndex].exercises.map(ex => ex.name)
+            : []
+        }
+      />
     </View>
   );
 }
@@ -349,4 +420,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  /*
+  // Exercises section
+  exercisesSection: {
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.gray200,
+  },
+  exercisesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  exercisesCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  exercisesList: {
+    gap: spacing.xs,
+  },
+  exerciseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.gray50,
+    padding: spacing.sm,
+    borderRadius: radius.base,
+    gap: spacing.sm,
+  },
+  removeButton: {
+    padding: spacing.xs,
+  },*/
 });

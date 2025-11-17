@@ -1,5 +1,5 @@
 // URL de tu backend
-const API_URL = 'http://192.168.1.68:3003/api';
+import { API_URL } from '../config/api';
 
 // ==================== RUTINAS ====================
 
