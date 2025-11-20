@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getRoutineById } from "../../api/routineApi";
 import { useState, useEffect } from "react";
 import { useSessionProgress } from "../../hooks/useSessionProgress";
-import { 
-  getDayForSession, 
-  getSessionStatus, 
-  hasExercises, 
-  getWorkoutStartIndex 
+import {
+    getDayForSession,
+    getSessionStatus,
+    hasExercises,
+    getWorkoutStartIndex
 } from "../../utils/sessionHelpers";
 import { getWorkoutProgress } from "../../utils/workoutProgressCache";
 import React from "react";
@@ -38,14 +38,14 @@ export default function RoutineDetailScreen() {
     const [workoutProgress, setWorkoutProgress] = useState(null);
     const [loadingProgress, setLoadingProgress] = useState(true);
 
-     // Estado para animaciones
-   const [expandedAnimations] = useState(() => {
-    const animations = {};
-    for (let i = 1; i <= 21; i++) {
-        animations[`session-${i}`] = new Animated.Value(0);
-    }
-    return animations;
-});
+    // Estado para animaciones
+    const [expandedAnimations] = useState(() => {
+        const animations = {};
+        for (let i = 1; i <= 72; i++) {  // Máximo posible
+            animations[`session-${i}`] = new Animated.Value(0);
+        }
+        return animations;
+    });
 
     useFocusEffect(
         React.useCallback(() => {
@@ -178,8 +178,8 @@ export default function RoutineDetailScreen() {
     const totalDays = routine.days?.length || 3;
     const currentDayIndex = ((currentSession - 1) % totalDays);
     const currentWeek = Math.ceil(currentSession / totalDays);
-    const sessionsData = Array.from({ length: 21 }, (_, i) => i + 1);
-   
+    const sessionsData = Array.from({ length: routine.totalSessions }, (_, i) => i + 1);
+
 
     return (
         <FlatList
@@ -214,7 +214,7 @@ export default function RoutineDetailScreen() {
                                 {/* Progreso circular grande */}
                                 <View style={styles.circularProgressContainer}>
                                     <CircularProgress
-                                        percentage={Math.round((currentSession / 21) * 100)}
+                                        percentage={Math.round((currentSession / routine.totalSessions) * 100)}
                                         size={80}
                                         strokeWidth={6}
                                         showPercentage={true}
@@ -232,7 +232,7 @@ export default function RoutineDetailScreen() {
                                             Sesión {currentSession}
                                         </Text>
                                         <Text variant="bodySmall" color="neutral.gray500">
-                                            de 21 totales
+                                            de {routine.totalSessions} totales
                                         </Text>
                                     </View>
 
@@ -255,7 +255,7 @@ export default function RoutineDetailScreen() {
                                         <View style={styles.miniStat}>
                                             <Icon name="timer" size={14} color={colors.neutral.gray500} />
                                             <Text variant="caption" color="neutral.gray600">
-                                                {21 - currentSession + 1} restantes
+                                                {routine.totalSessions - currentSession + 1} restantes
                                             </Text>
                                         </View>
                                     </View>
@@ -291,7 +291,7 @@ export default function RoutineDetailScreen() {
                                     {routine.days?.sort((a, b) => a.order - b.order)[currentDayIndex]?.name}
                                 </Text>
                                 <Text variant="bodySmall" style={styles.sessionMeta}>
-                                    Semana {currentWeek} • Sesión {currentSession} de 21
+                                    Semana {currentWeek} • Sesión {currentSession} de {routine.totalSessions}
                                 </Text>
 
                                 {/* PROGRESO INTEGRADO (NUEVO) */}
@@ -326,7 +326,7 @@ export default function RoutineDetailScreen() {
                         </Button>
 
                         {/* Botón secundario (saltar) */}
-                        {currentSession < 21 && (
+                        {currentSession < routine.totalSessions && (
                             <Pressable
                                 style={styles.skipButton}
                                 onPress={handleSkipSession}
@@ -341,7 +341,7 @@ export default function RoutineDetailScreen() {
                     {/* Título de la sección */}
                     <View style={styles.daysSection}>
                         <Text variant="h3" color="neutral.gray600">
-                            Programa Completo (21 Sesiones)
+                            Programa Completo ({routine.totalSessions} Sesiones)
                         </Text>
                     </View>
                 </>

@@ -34,6 +34,7 @@ export default function Button({
   fullWidth = false,
   children,
   style,
+  containerStyle,
   ...props
 }) {
 
@@ -69,56 +70,56 @@ export default function Button({
   const resolvedIconSize = iconSize || getIconSize(size);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-    <Pressable
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      onPress={onPress}
-      disabled={disabled || loading}
-      {...props}
-      style={({ pressed }) => [
-        buttonStyles,
-        pressed && !disabled && !loading && styles.pressed,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator
-          color={textColor}
-          size={size === 'sm' ? 'small' : 'default'}
-        />
-      ) : (
-        <View style={styles.content}>
-          {/* Icono a la izquierda */}
-          {icon && iconPosition === 'left' && (
-            <Icon
-              name={icon}
-              size={resolvedIconSize}
-              color={textColor}
-              style={{ marginRight: spacing.xs }}
-            />
-          )}
-
-          {/* Texto */}
-          <Text
-            variant={textVariant}
+      <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, containerStyle]}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        disabled={disabled || loading}
+        {...props}
+        style={({ pressed }) => [
+          buttonStyles,
+          pressed && !disabled && !loading && styles.pressed,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator
             color={textColor}
-            style={styles.text}
-          >
-            {children}
-          </Text>
+            size={size === 'sm' ? 'small' : 'default'}
+          />
+        ) : (
+          <View style={styles.content}>
+            {/* Icono a la izquierda */}
+            {icon && iconPosition === 'left' && (
+              <Icon
+                name={icon}
+                size={resolvedIconSize}
+                color={textColor}
+                style={{ marginRight: spacing.xs }}
+              />
+            )}
 
-          {/* Icono a la derecha */}
-          {icon && iconPosition === 'right' && (
-            <Icon
-              name={icon}
-              size={resolvedIconSize}
+            {/* Texto */}
+            <Text
+              variant={textVariant}
               color={textColor}
-              style={{ marginLeft: spacing.xs }}
-            />
-          )}
-        </View>
-      )}
-    </Pressable>
+              style={styles.text}
+            >
+              {children}
+            </Text>
+
+            {/* Icono a la derecha */}
+            {icon && iconPosition === 'right' && (
+              <Icon
+                name={icon}
+                size={resolvedIconSize}
+                color={textColor}
+                style={{ marginLeft: spacing.xs }}
+              />
+            )}
+          </View>
+        )}
+      </Pressable>
     </Animated.View>
   );
 }

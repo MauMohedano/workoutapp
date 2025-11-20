@@ -11,37 +11,78 @@ import { searchExercises } from '../api/exerciseCatalogApi';
 
 export default function ExercisePicker({ visible, onClose, onSelectExercise, selectedExerciseIds = [] }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMuscle, setSelectedMuscle] = useState('');
+  const [selectedMuscle, setSelectedMuscle] = useState(null); // null = mostrar grupos
 
-  // Muscle groups disponibles
+  // Muscle groups con iconos y nombres display
   const muscleGroups = [
-    'abdominals', 'abductors', 'adductors', 'biceps', 'calves',
-    'chest', 'forearms', 'glutes', 'hamstrings', 'lats',
-    'lower_back', 'middle_back', 'neck', 'quadriceps', 'traps', 'triceps'
+    { id: 'chest', name: 'Chest', icon: 'body' },
+    { id: 'back', name: 'Back', icon: 'body' },
+    { id: 'shoulders', name: 'Shoulders', icon: 'body' },
+    { id: 'biceps', name: 'Biceps', icon: 'arm' },
+    { id: 'triceps', name: 'Triceps', icon: 'arm' },
+    { id: 'forearms', name: 'Forearms', icon: 'arm' },
+    { id: 'quadriceps', name: 'Quadriceps', icon: 'body' },
+    { id: 'hamstrings', name: 'Hamstrings', icon: 'body' },
+    { id: 'glutes', name: 'Glutes', icon: 'body' },
+    { id: 'calves', name: 'Calves', icon: 'body' },
+    { id: 'abdominals', name: 'Abdominals', icon: 'body' },
+    { id: 'lats', name: 'Lats', icon: 'body' },
+    { id: 'lower_back', name: 'Lower Back', icon: 'body' },
+    { id: 'middle_back', name: 'Middle Back', icon: 'body' },
+    { id: 'traps', name: 'Traps', icon: 'body' },
+    { id: 'neck', name: 'Neck', icon: 'body' },
   ];
 
-  // Query para buscar ejercicios
+  // Query para buscar ejercicios (solo cuando hay músculo seleccionado o búsqueda)
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['exercise-search', searchQuery, selectedMuscle],
     queryFn: () => searchExercises({
       q: searchQuery,
-      muscle: selectedMuscle,
+      muscle: selectedMuscle || '',
       limit: 50
     }),
-    enabled: visible, // Solo buscar cuando el modal está visible
+    enabled: visible && (!!selectedMuscle || searchQuery.length > 0),
   });
 
   // Refetch cuando cambian los filtros
   useEffect(() => {
-    if (visible) {
+    if (visible && (selectedMuscle || searchQuery)) {
       refetch();
     }
   }, [searchQuery, selectedMuscle, visible]);
+
+  // Reset al cerrar
+  useEffect(() => {
+    if (!visible) {
+      setSelectedMuscle(null);
+      setSearchQuery('');
+    }
+  }, [visible]);
 
   // Filtrar ejercicios ya seleccionados
   const exercises = data?.exercises?.filter(
     ex => !selectedExerciseIds.includes(ex._id || ex.name)
   ) || [];
+
+  const handleBack = () => {
+    setSelectedMuscle(null);
+    setSearchQuery('');
+  };
+
+  const renderMuscleGroup = ({ item }) => (
+    <Pressable
+      style={styles.muscleItem}
+      onPress={() => setSelectedMuscle(item.id)}
+    >
+      <View style={styles.muscleIcon}>
+        <Icon name="barbell" size={24} color={colors.primary.main} />
+      </View>
+      <Text variant="bodyMedium" color="neutral.gray800" bold style={{ flex: 1 }}>
+        {item.name}
+      </Text>
+      <Icon name="chevron-forward" size={20} color={colors.neutral.gray400} />
+    </Pressable>
+  );
 
   const renderExercise = ({ item }) => (
     <Pressable
@@ -67,22 +108,15 @@ export default function ExercisePicker({ visible, onClose, onSelectExercise, sel
             </Text>
           </View>
           <View style={styles.metaBadge}>
-            <Icon name="dumbbell" size={12} color={colors.neutral.gray600} />
+            <Icon name="fitness" size={12} color={colors.neutral.gray600} />
             <Text variant="caption" color="neutral.gray600">
               {item.equipment}
             </Text>
           </View>
-          {item.difficulty && (
-            <View style={styles.metaBadge}>
-              <Text variant="caption" color="neutral.gray500">
-                {item.difficulty}
-              </Text>
-            </View>
-          )}
         </View>
       </View>
 
-      <Icon name="chevron-forward" size={20} color={colors.neutral.gray400} />
+      <Icon name="add-circle" size={24} color={colors.primary.main} />
     </Pressable>
   );
 
@@ -91,25 +125,36 @@ export default function ExercisePicker({ visible, onClose, onSelectExercise, sel
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text variant="h2" color="neutral.gray900">
-              Seleccionar Ejercicio
-            </Text>
-            <Text variant="bodySmall" color="neutral.gray600">
-              {data?.count || 0} ejercicios • {data?.source === 'hybrid' ? 'DB + API Ninja' : data?.source || ''}
-            </Text>
+          <View style={styles.headerLeft}>
+            {selectedMuscle && (
+              <Pressable onPress={handleBack} style={styles.backButton}>
+                <Icon name="arrow-back" size={24} color={colors.neutral.gray800} />
+              </Pressable>
+            )}
+            <View>
+              <Text variant="h2" color="neutral.gray900">
+                {selectedMuscle 
+                  ? muscleGroups.find(m => m.id === selectedMuscle)?.name 
+                  : 'Seleccionar Ejercicio'}
+              </Text>
+              {selectedMuscle && data && (
+                <Text variant="bodySmall" color="neutral.gray600">
+                  {data.count || 0} ejercicios
+                </Text>
+              )}
+            </View>
           </View>
           <Pressable onPress={onClose} style={styles.closeButton}>
             <Icon name="close" size={28} color={colors.neutral.gray800} />
           </Pressable>
         </View>
 
-        {/* Search */}
+        {/* Search - Solo visible cuando hay músculo seleccionado o queremos buscar global */}
         <View style={styles.searchContainer}>
           <Icon name="search" size={20} color={colors.neutral.gray500} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar ejercicio... (ej: bench press)"
+            placeholder={selectedMuscle ? "Buscar en este grupo..." : "Buscar ejercicio..."}
             placeholderTextColor={colors.neutral.gray400}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -121,41 +166,17 @@ export default function ExercisePicker({ visible, onClose, onSelectExercise, sel
           )}
         </View>
 
-        {/* Muscle filter */}
-        <View style={styles.filters}>
+        {/* Content */}
+        {!selectedMuscle && !searchQuery ? (
+          // Vista de grupos musculares
           <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={['Todos', ...muscleGroups]}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[
-                  styles.filterChip,
-                  (item === 'Todos' && !selectedMuscle) && styles.filterChipActive,
-                  selectedMuscle === item && styles.filterChipActive,
-                ]}
-                onPress={() => setSelectedMuscle(item === 'Todos' ? '' : item)}
-              >
-                <Text
-                  variant="caption"
-                  color={
-                    (item === 'Todos' && !selectedMuscle) || selectedMuscle === item
-                      ? 'neutral.white'
-                      : 'neutral.gray700'
-                  }
-                  bold={(item === 'Todos' && !selectedMuscle) || selectedMuscle === item}
-                >
-                  {item.replace('_', ' ')}
-                </Text>
-              </Pressable>
-            )}
-            contentContainerStyle={styles.filterList}
+            data={muscleGroups}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMuscleGroup}
+            contentContainerStyle={styles.listContent}
           />
-        </View>
-
-        {/* Exercise list */}
-        {isLoading ? (
+        ) : isLoading ? (
+          // Loading
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary.main} />
             <Text variant="body" color="neutral.gray600" style={{ marginTop: spacing.md }}>
@@ -163,11 +184,12 @@ export default function ExercisePicker({ visible, onClose, onSelectExercise, sel
             </Text>
           </View>
         ) : (
+          // Lista de ejercicios
           <FlatList
             data={exercises}
             keyExtractor={(item) => item._id || item.name}
             renderItem={renderExercise}
-            contentContainerStyle={styles.exerciseList}
+            contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Icon name="search" size={48} color={colors.neutral.gray400} />
@@ -175,7 +197,7 @@ export default function ExercisePicker({ visible, onClose, onSelectExercise, sel
                   No se encontraron ejercicios
                 </Text>
                 <Text variant="bodySmall" color="neutral.gray500" align="center">
-                  {searchQuery ? 'Intenta con otro término' : 'Ajusta los filtros'}
+                  Intenta con otro término de búsqueda
                 </Text>
               </View>
             }
@@ -196,11 +218,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: spacing.lg,
     paddingTop: spacing.xl + 20,
     backgroundColor: colors.neutral.white,
     ...shadows.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  backButton: {
+    padding: spacing.xs,
+    marginRight: spacing.xs,
   },
   closeButton: {
     padding: spacing.xs,
@@ -223,32 +255,33 @@ const styles = StyleSheet.create({
     color: colors.neutral.gray800,
   },
 
-  // Filters
-  filters: {
-    marginBottom: spacing.md,
-  },
-  filterList: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  filterChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.neutral.white,
-    borderWidth: 1,
-    borderColor: colors.neutral.gray300,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-
-  // Exercise list
-  exerciseList: {
+  // List content
+  listContent: {
     padding: spacing.lg,
     paddingTop: 0,
   },
+
+  // Muscle group item
+  muscleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.white,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
+    ...shadows.sm,
+  },
+  muscleIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary.main + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Exercise item
   exerciseItem: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -16,6 +16,7 @@ export default function CreateRoutineScreen() {
   const [routineName, setRoutineName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedDays, setSelectedDays] = useState(3);
+  const [selectedWeeks, setSelectedWeeks] = useState(8)
 
   // Validación
   const [errors, setErrors] = useState({});
@@ -48,6 +49,7 @@ export default function CreateRoutineScreen() {
         routineName,
         description,
         totalDays: selectedDays,
+        totalSessions: selectedDays * selectedWeeks,
       },
     });
   };
@@ -134,6 +136,64 @@ export default function CreateRoutineScreen() {
             <Text variant="caption" color="neutral.gray500" style={{ marginTop: spacing.sm }}>
               Este será el ciclo que se repetirá cada semana
             </Text>
+          </View>
+        </Card>
+        
+        {/* Weeks selector */}
+        <Card style={styles.formCard}>
+          <View style={styles.weeksSelector}>
+            <View style={styles.labelRow}>
+              <Text variant="bodySmall" color="neutral.gray700" bold>
+                ¿Duración del programa?
+              </Text>
+              <Text variant="bodySmall" color="danger.main">
+                *
+              </Text>
+            </View>
+
+            <View style={styles.stepperContainer}>
+              <Pressable
+                style={[
+                  styles.stepperButton,
+                  selectedWeeks <= 4 && styles.stepperButtonDisabled
+                ]}
+                onPress={() => setSelectedWeeks(prev => Math.max(4, prev - 1))}
+                disabled={selectedWeeks <= 4}
+              >
+                <Text variant="h3" color={selectedWeeks <= 4 ? 'neutral.gray300' : 'primary.main'}>
+                  −
+                </Text>
+              </Pressable>
+
+              <View style={styles.stepperValue}>
+                <Text variant="h2" color="neutral.gray900">
+                  {selectedWeeks}
+                </Text>
+                <Text variant="bodySmall" color="neutral.gray500">
+                  semanas
+                </Text>
+              </View>
+
+              <Pressable
+                style={[
+                  styles.stepperButton,
+                  selectedWeeks >= 12 && styles.stepperButtonDisabled
+                ]}
+                onPress={() => setSelectedWeeks(prev => Math.min(12, prev + 1))}
+                disabled={selectedWeeks >= 12}
+              >
+                <Text variant="h3" color={selectedWeeks >= 12 ? 'neutral.gray300' : 'primary.main'}>
+                  +
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Total sessions display */}
+            <View style={styles.sessionsInfo}>
+              <Text variant="bodySmall" color="neutral.gray600">
+                📊 Total: <Text bold color="primary.main">{selectedWeeks * selectedDays} sesiones</Text>
+              </Text>
+            </View>
           </View>
         </Card>
 
@@ -225,6 +285,40 @@ const styles = StyleSheet.create({
   dayButton: {
     flex: 1,
     minWidth: 70,
+  },
+
+  // Weeks selector
+  weeksSelector: {
+    marginTop: spacing.md,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  stepperButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.neutral.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperButtonDisabled: {
+    backgroundColor: colors.neutral.gray50,
+  },
+  stepperValue: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  sessionsInfo: {
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.gray200,
+    marginTop: spacing.sm,
   },
 
   // Info card

@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Pressable, Modal, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,8 +19,10 @@ export default function ConfigureDaysScreen() {
   const queryClient = useQueryClient();
 
   // Recibir parámetros del paso anterior
-  const { routineName, description, totalDays } = useLocalSearchParams();
+  const { routineName, description, totalDays, totalSessions } = useLocalSearchParams();
   const daysCount = parseInt(totalDays);
+
+  console.log('Params recibidos:', { routineName, description, totalDays, totalSessions });
 
   // Estado de días
   const [days, setDays] = useState(
@@ -32,11 +34,24 @@ export default function ConfigureDaysScreen() {
     }))
   );
 
+  // Estado para día expandido
+  const [expandedDay, setExpandedDay] = useState(0);
+
   // Validación
   const [errors, setErrors] = useState({});
 
+  // Exercise Picker
   const [exercisePickerVisible, setExercisePickerVisible] = useState(false);
   const [currentDayIndex, setCurrentDayIndex] = useState(null);
+
+  // Modal de configuración de ejercicio
+  const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [exerciseConfig, setExerciseConfig] = useState({
+    sets: '3',
+    reps: '10',
+    restTime: '90',
+  });
 
   // Mutation para crear rutina
   const createMutation = useMutation({
@@ -70,6 +85,10 @@ export default function ConfigureDaysScreen() {
     setDays(newDays);
   };
 
+  const toggleDay = (index) => {
+    setExpandedDay(expandedDay === index ? null : index);
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -89,31 +108,20 @@ export default function ConfigureDaysScreen() {
       return;
     }
 
-    // Confirmar creación
-    Alert.alert(
-      'Crear Rutina',
-      '¿Deseas crear esta rutina sin ejercicios? Podrás agregarlos después.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Crear',
-          onPress: async () => {
-            const routineData = {
-              name: routineName,
-              description: description || undefined,
-              days: days.map((day) => ({
-                name: day.name,
-                order: day.order,
-                exercises: [], // Por ahora vacío - se agregarán después
-              })),
-              isActive: true,
-            };
-
-            createMutation.mutate(routineData);
-          },
-        },
-      ]
-    );
+    const routineData = {
+      name: routineName,
+      description: description || undefined,
+      totalSessions: parseInt(totalSessions),
+      days: days.map((day) => ({
+        name: day.name,
+        order: day.order,
+        exercises: day.exercises,
+      })),
+      isActive: true,
+    };
+    // Debug temporal
+    console.log('routineData a enviar:', routineData);
+    createMutation.mutate(routineData);
   };
 
   const navigateToAddExercises = (dayIndex) => {
@@ -121,27 +129,39 @@ export default function ConfigureDaysScreen() {
     setExercisePickerVisible(true);
   };
 
+  // Cuando se selecciona un ejercicio del picker
   const handleSelectExercise = (exercise) => {
-    // Agregar ejercicio al día actual
+    setSelectedExercise(exercise);
+    setExerciseConfig({
+      sets: '3',
+      reps: '10',
+      restTime: '90',
+    });
+    setConfigModalVisible(true);
+  };
+
+  // Confirmar y agregar ejercicio con la configuración
+  const handleConfirmExercise = () => {
+    if (!selectedExercise) return;
+
     const newDays = [...days];
     const newExercise = {
       id: `exercise-${Date.now()}`,
-      name: exercise.name,
-      muscle: exercise.muscle,
-      equipment: exercise.equipment,
-      targetSets: exercise.defaultSets || 3,
-      targetReps: exercise.defaultReps || 10,
-      restTime: exercise.defaultRest || 90,
+      name: selectedExercise.name,
+      muscle: selectedExercise.muscle,
+      equipment: selectedExercise.equipment,
+      targetSets: parseInt(exerciseConfig.sets) || 3,
+      targetReps: exerciseConfig.reps || '10',
+      restTime: parseInt(exerciseConfig.restTime) || 90,
       order: newDays[currentDayIndex].exercises.length + 1,
     };
 
     newDays[currentDayIndex].exercises.push(newExercise);
     setDays(newDays);
 
-    Alert.alert(
-      'Ejercicio Agregado ✅',
-      `${exercise.name} agregado a ${newDays[currentDayIndex].name || `Día ${currentDayIndex + 1}`}`
-    );
+    // Cerrar modal y limpiar
+    setConfigModalVisible(false);
+    setSelectedExercise(null);
   };
 
   const removeExercise = (dayIndex, exerciseId) => {
@@ -182,7 +202,7 @@ export default function ConfigureDaysScreen() {
             Días de la Rutina 📅
           </Text>
           <Text variant="body" color="neutral.gray600" style={{ marginTop: spacing.xs }}>
-            Paso 2 de 3: Configura tus {daysCount} días
+            Configura tus {daysCount} días
           </Text>
         </View>
 
@@ -204,87 +224,119 @@ export default function ConfigureDaysScreen() {
               {description}
             </Text>
           )}
+          <View style={[styles.infoRow, { marginTop: spacing.sm }]}>
+            <Icon name="calendar" size={16} color={colors.neutral.gray500} />
+            <Text variant="bodySmall" color="neutral.gray600">
+              {totalSessions} sesiones programadas
+            </Text>
+          </View>
         </Card>
 
         {/* Days list */}
-        {days.map((day, index) => (
-          <Card key={day.id} style={styles.dayCard}>
-            <View style={styles.dayHeader}>
-              <View style={styles.dayNumber}>
-                <Text variant="h3" color="neutral.white">
-                  {index + 1}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <FormInput
-                  label={`Día ${index + 1}`}
-                  value={day.name}
-                  onChangeText={(text) => updateDayName(index, text)}
-                  placeholder={getDayPlaceholder(index)}
-                  required
-                  maxLength={30}
-                  error={errors[`day-${index}`]}
-                  style={{ marginBottom: 0 }}
-                />
-              </View>
-            </View>
+        {days.map((day, index) => {
+          const isExpanded = expandedDay === index;
 
-            {/* Exercises count */}
-            {/* Exercises section */}
-            <View style={styles.exercisesSection}>
-              <View style={styles.exercisesHeader}>
-                <View style={styles.exercisesCount}>
-                  <Icon name="barbell" size={16} color={colors.neutral.gray500} />
-                  <Text variant="bodySmall" color="neutral.gray600">
-                    {day.exercises.length} ejercicio{day.exercises.length !== 1 ? 's' : ''}
-                  </Text>
+          return (
+            <Card key={day.id} style={styles.dayCard}>
+              {/* Header clickeable */}
+              <Pressable onPress={() => toggleDay(index)}>
+                <View style={styles.dayHeader}>
+                  <View style={styles.dayNumber}>
+                    <Text variant="h3" color="neutral.white">
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <View style={styles.dayInfo}>
+                    <Text variant="bodyMedium" color="neutral.gray800" bold>
+                      {day.name || `Día ${index + 1}`}
+                    </Text>
+                    <Text variant="caption" color="neutral.gray500">
+                      {day.exercises.length} ejercicio{day.exercises.length !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  <Icon
+                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={24}
+                    color={colors.neutral.gray400}
+                  />
                 </View>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon="add"
-                  onPress={() => navigateToAddExercises(index)}
-                >
-                  Agregar
-                </Button>
-              </View>
+              </Pressable>
 
-              {/* Lista de ejercicios agregados */}
-              {day.exercises.length > 0 && (
-                <View style={styles.exercisesList}>
-                  {day.exercises.map((exercise) => (
-                    <View key={exercise.id} style={styles.exerciseItem}>
-                      <View style={{ flex: 1 }}>
-                        <Text variant="bodySmall" color="neutral.gray800" bold>
-                          • {exercise.name}
-                        </Text>
-                        <Text variant="caption" color="neutral.gray500">
-                          {exercise.targetSets}×{exercise.targetReps} • {exercise.restTime}s rest
+              {/* Contenido expandible */}
+              {isExpanded && (
+                <View style={styles.expandedContent}>
+                  {/* Input para nombre */}
+                  <FormInput
+                    label="Nombre del día"
+                    value={day.name}
+                    onChangeText={(text) => updateDayName(index, text)}
+                    placeholder={getDayPlaceholder(index)}
+                    required
+                    maxLength={30}
+                    error={errors[`day-${index}`]}
+                    style={{ marginBottom: spacing.md }}
+                  />
+
+                  {/* Sección de ejercicios */}
+                  <View style={styles.exercisesSection}>
+                    <View style={styles.exercisesHeader}>
+                      <Text variant="bodySmall" color="neutral.gray700" bold>
+                        Ejercicios
+                      </Text>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="add"
+                        onPress={() => navigateToAddExercises(index)}
+                      >
+                        Agregar
+                      </Button>
+                    </View>
+
+                    {/* Lista de ejercicios */}
+                    {day.exercises.length > 0 ? (
+                      <View style={styles.exercisesList}>
+                        {day.exercises.map((exercise) => (
+                          <View key={exercise.id} style={styles.exerciseItem}>
+                            <View style={{ flex: 1 }}>
+                              <Text variant="bodySmall" color="neutral.gray800" bold>
+                                {exercise.name}
+                              </Text>
+                              <Text variant="caption" color="neutral.gray500">
+                                {exercise.targetSets}×{exercise.targetReps} • {exercise.restTime}s rest
+                              </Text>
+                            </View>
+                            <Pressable
+                              onPress={() => removeExercise(index, exercise.id)}
+                              style={styles.removeButton}
+                            >
+                              <Icon name="trash" size={16} color={colors.danger.main} />
+                            </Pressable>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <View style={styles.emptyExercises}>
+                        <Icon name="barbell" size={24} color={colors.neutral.gray300} />
+                        <Text variant="caption" color="neutral.gray400">
+                          Sin ejercicios agregados
                         </Text>
                       </View>
-                      <Pressable
-                        onPress={() => removeExercise(index, exercise.id)}
-                        style={styles.removeButton}
-                      >
-                        <Icon name="trash" size={16} color={colors.danger.main} />
-                      </Pressable>
-                    </View>
-                  ))}
+                    )}
+                  </View>
                 </View>
               )}
-            </View>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
 
         {/* Quick tips */}
         <Card style={styles.tipsCard}>
           <Text variant="bodySmall" color="neutral.gray700" bold style={{ marginBottom: spacing.xs }}>
-            💡 Sugerencias de nombres:
+            💡 Tip
           </Text>
           <Text variant="caption" color="neutral.gray600">
-            • PPL: Push, Pull, Legs{'\n'}
-            • Upper/Lower: Tren Superior, Tren Inferior{'\n'}
-            • Grupos musculares: Pecho, Espalda, Piernas, etc.
+            Toca cada día para expandirlo y configurar su nombre y ejercicios.
           </Text>
         </Card>
       </ScrollView>
@@ -309,6 +361,7 @@ export default function ConfigureDaysScreen() {
           Crear Rutina
         </Button>
       </View>
+
       {/* Exercise Picker Modal */}
       <ExercisePicker
         visible={exercisePickerVisible}
@@ -320,6 +373,153 @@ export default function ConfigureDaysScreen() {
             : []
         }
       />
+
+      {/* Modal de configuración de ejercicio */}
+      <Modal
+        visible={configModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setConfigModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.configModal}>
+                {/* Header del modal */}
+                <View style={styles.configHeader}>
+                  <Text variant="h3" color="neutral.gray900">
+                    Configurar Ejercicio
+                  </Text>
+                  <Pressable onPress={() => setConfigModalVisible(false)}>
+                    <Icon name="close" size={24} color={colors.neutral.gray600} />
+                  </Pressable>
+                </View>
+
+                {/* Nombre del ejercicio */}
+                {selectedExercise && (
+                  <View style={styles.exercisePreview}>
+                    <Text variant="bodyMedium" color="neutral.gray800" bold>
+                      {selectedExercise.name}
+                    </Text>
+                    <Text variant="caption" color="neutral.gray500">
+                      {selectedExercise.muscle} • {selectedExercise.equipment}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Inputs de configuración */}
+                <View style={styles.configInputs}>
+                  {/* Sets */}
+                  <View style={styles.configRow}>
+                    <Text variant="body" color="neutral.gray700">
+                      Series
+                    </Text>
+                    <View style={styles.numberInput}>
+                      <Pressable
+                        style={styles.numberButton}
+                        onPress={() => setExerciseConfig(prev => ({
+                          ...prev,
+                          sets: String(Math.max(1, parseInt(prev.sets) - 1))
+                        }))}
+                      >
+                        <Icon name="remove" size={20} color={colors.primary.main} />
+                      </Pressable>
+                      <TextInput
+                        style={styles.numberValue}
+                        value={exerciseConfig.sets}
+                        onChangeText={(text) => setExerciseConfig(prev => ({ ...prev, sets: text }))}
+                        KeyboardType="numeric"
+                        maxLength={2}
+                        onSubmitEditing={() => Keyboard.dismiss()}
+                      />
+                      <Pressable
+                        style={styles.numberButton}
+                        onPress={() => setExerciseConfig(prev => ({
+                          ...prev,
+                          sets: String(parseInt(prev.sets) + 1)
+                        }))}
+                      >
+                        <Icon name="add" size={20} color={colors.primary.main} />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  {/* Reps */}
+                  <View style={styles.configRow}>
+                    <Text variant="body" color="neutral.gray700">
+                      Repeticiones
+                    </Text>
+                    <TextInput
+                      style={styles.repsInput}
+                      value={exerciseConfig.reps}
+                      onChangeText={(text) => setExerciseConfig(prev => ({ ...prev, reps: text }))}
+                      placeholder="10"
+                      placeholderTextColor={colors.neutral.gray400}
+                      KeyboardType="numeric"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                  </View>
+
+                  {/* Rest Time */}
+                  <View style={styles.configRow}>
+                    <Text variant="body" color="neutral.gray700">
+                      Descanso (seg)
+                    </Text>
+                    <View style={styles.numberInput}>
+                      <Pressable
+                        style={styles.numberButton}
+                        onPress={() => setExerciseConfig(prev => ({
+                          ...prev,
+                          restTime: String(Math.max(15, parseInt(prev.restTime) - 15))
+                        }))}
+                      >
+                        <Icon name="remove" size={20} color={colors.primary.main} />
+                      </Pressable>
+                      <TextInput
+                        style={styles.numberValue}
+                        value={exerciseConfig.restTime}
+                        onChangeText={(text) => setExerciseConfig(prev => ({ ...prev, restTime: text }))}
+                        KeyboardType="numeric"
+                        maxLength={3}
+                        returnKeyType="done"
+                        onSubmitEditing={() => Keyboard.dismiss()}
+                      />
+                      <Pressable
+                        style={styles.numberButton}
+                        onPress={() => setExerciseConfig(prev => ({
+                          ...prev,
+                          restTime: String(parseInt(prev.restTime) + 15)
+                        }))}
+                      >
+                        <Icon name="add" size={20} color={colors.primary.main} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Botones de acción */}
+               <View style={styles.configActions}>
+       <Button
+  variant="secondary"
+  onPress={() => setConfigModalVisible(false)}
+  containerStyle={{ flex: 1 }}
+>
+  Cancelar
+</Button>
+<Button
+  variant="primary"
+  onPress={handleConfirmExercise}
+  containerStyle={{ flex: 1 }}
+>
+  Agregar
+</Button>
+      </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -371,34 +571,63 @@ const styles = StyleSheet.create({
 
   // Day card
   dayCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
   },
   dayHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: spacing.md,
     gap: spacing.md,
-    marginBottom: spacing.md,
   },
   dayNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24, // Alineado con el input
   },
-  exercisesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.sm,
+  dayInfo: {
+    flex: 1,
+  },
+
+  // Expanded content
+  expandedContent: {
+    padding: spacing.md,
+    paddingTop: 0,
     borderTopWidth: 1,
     borderTopColor: colors.neutral.gray200,
   },
-  addButton: {
-    marginLeft: 'auto',
+
+  // Exercises section
+  exercisesSection: {
+    marginTop: spacing.sm,
+  },
+  exercisesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  exercisesList: {
+    gap: spacing.xs,
+  },
+  exerciseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.gray50,
+    padding: spacing.sm,
+    borderRadius: radius.base,
+    gap: spacing.sm,
+  },
+  removeButton: {
+    padding: spacing.xs,
+  },
+  emptyExercises: {
+    alignItems: 'center',
+    padding: spacing.lg,
+    gap: spacing.xs,
   },
 
   // Tips card
@@ -420,36 +649,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  /*
-  // Exercises section
-  exercisesSection: {
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral.gray200,
+
+  // Modal de configuración
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
-  exercisesHeader: {
+  configModal: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+  },
+  configHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  exercisesCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  exercisesList: {
-    gap: spacing.xs,
-  },
-  exerciseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  exercisePreview: {
     backgroundColor: colors.neutral.gray50,
-    padding: spacing.sm,
+    padding: spacing.md,
     borderRadius: radius.base,
+    marginBottom: spacing.lg,
+  },
+  configInputs: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  configRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  numberInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.gray100,
+    borderRadius: radius.base,
+    overflow: 'hidden',
+  },
+  numberButton: {
+    padding: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  numberValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.neutral.gray800,
+    textAlign: 'center',
+    minWidth: 50,
+    paddingVertical: spacing.sm,
+  },
+  repsInput: {
+  backgroundColor: colors.neutral.gray100,
+  borderRadius: radius.base,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: colors.neutral.gray800,
+  textAlign: 'center',
+  width: 140,
+},
+  configActions: {
+    flexDirection: 'row',
     gap: spacing.sm,
   },
-  removeButton: {
-    padding: spacing.xs,
-  },*/
 });

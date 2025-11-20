@@ -38,6 +38,7 @@ export const iconMap = {
 
   // Reproducción
   play: 'play-outline',
+  pause: 'pause-outline',
   'play-circle': 'play-circle-outline',
   'play-skip-forward': 'play-skip-forward-outline',
    

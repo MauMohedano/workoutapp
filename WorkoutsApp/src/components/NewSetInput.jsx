@@ -12,7 +12,7 @@ const NewSetInput = ({
   exerciseName, 
   routineExerciseId, 
   sessionNumber, 
-  resetTime = 90,
+  restTime = 90,
   targetSets = 4,
   targetReps = 10 
 }) => {
@@ -88,7 +88,7 @@ const NewSetInput = ({
       {/* Timer de descanso */}
       {showTimer && (
         <ResetTimer
-          restTime={resetTime}
+          restTime={restTime}
           onComplete={handleTimerComplete}
         />
       )}

@@ -70,6 +70,12 @@ const RoutineSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  totalSessions: {
+    type: Number,
+    required: true,
+    min: 12,
+    max: 72
+  },
   isActive: { 
     type: Boolean, 
     default: false 

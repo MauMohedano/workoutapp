@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, StyleSheet, View, Pressable } from 'react-native';
@@ -6,12 +7,26 @@ import { getRoutines } from '../api/routineApi';
 import { Link } from 'expo-router';
 import { colors, spacing, typography, radius, shadows, Icon } from '@/design-systems/tokens';
 import { Text, Button, Card, CircularProgress } from '@/design-systems/components';
+import { getDeviceId } from "../utils/deviceId";
 
 export default function HomeScreen() {
-   const router = useRouter();
+  const router = useRouter();
+  const [deviceId, setDeviceId] = useState(null);
+
+
+  useEffect(() => {
+    const loadDeviceId = async () => {
+      const id = await getDeviceId();
+      setDeviceId(id);
+    };
+    loadDeviceId();
+  }, []);
+
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['routines'],
-    queryFn: getRoutines
+    queryKey: ['routines', deviceId],
+    queryFn: () => getRoutines(deviceId),
+    enabled: !!deviceId
   });
 
   // ===== LOADING STATE =====
@@ -98,19 +113,19 @@ export default function HomeScreen() {
 
           <View style={styles.statCard}>
             <Text variant="h2" color="primary.main">
-              {data?.reduce((sum, r) => sum + (r.days?.length || 0), 0) || 0}
+              {data?.reduce((sum, r) => sum + (r.progress?.completedSessions?.length || 0), 0) || 0}
             </Text>
             <Text variant="caption" color="neutral.gray500">
-              Días
+              Sesiones completadas
             </Text>
           </View>
 
           <View style={styles.statCard}>
             <Text variant="h2" color="primary.main">
-              0
+              {Math.ceil((data?.reduce((sum, r) => sum + (r.progress?.completedSessions?.length || 0), 0) || 0) / 3) || 0}
             </Text>
             <Text variant="caption" color="neutral.gray500">
-              Semanas
+              Semanas concluidas
             </Text>
           </View>
         </View>
@@ -233,7 +248,7 @@ export default function HomeScreen() {
                       <View style={styles.statItem}>
                         <Icon name="flame" size={16} color={colors.warning.main} />
                         <Text variant="bodySmall" color="neutral.gray700" style={styles.statText}>
-                          0/21 sesiones
+                          {item.progress?.completedSessions?.length || 0}/{item.totalSessions} sesiones
                         </Text>
                       </View>
                     </View>

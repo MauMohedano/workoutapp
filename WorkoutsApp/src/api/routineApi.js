@@ -6,11 +6,17 @@ import { API_URL } from '../config/api';
 /**
  * Obtener todas las rutinas
  */
-export const getRoutines = async () => {
-  const response = await fetch(`${API_URL}/routines`);
+export const getRoutines = async (deviceId) => {
+  const url = deviceId 
+    ? `${API_URL}/routines?deviceId=${deviceId}`
+    : `${API_URL}/routines`;
+    
+  const response = await fetch(url);
+  
   if (!response.ok) {
     throw new Error('Failed to fetch routines');
   }
+  
   return response.json();
 };
 

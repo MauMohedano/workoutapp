@@ -2,7 +2,7 @@ import { View, StyleSheet, Pressable, Vibration } from 'react-native';
 import { useState, useEffect } from 'react';
 
 // Design System
-import { colors, spacing, radius } from '@/design-systems/tokens';
+import { colors, spacing, radius, Icon } from '@/design-systems/tokens';
 import { Text, Button } from '@/design-systems/components';
 
 export default function RestTimer({ restTime = 90, onComplete }) {
@@ -63,17 +63,17 @@ export default function RestTimer({ restTime = 90, onComplete }) {
 
     const getProgressColor = () => {
         const percentage = (timeLeft / restTime) * 100;
-        if (percentage > 66) return colors.success.main;
+        if (percentage > 66) return colors.primary.main;
         if (percentage > 33) return colors.warning.main;
         return colors.danger.main;
-        
     };
 
     if (!isRunning && timeLeft === 0) {
         return (
             <View style={styles.completedContainer}>
+                <Icon name="success" size={24} color={colors.neutral.white} />
                 <Text variant="h3" style={{ color: colors.neutral.white }}>
-                    ✅ Descanso Completado
+                    Descanso Completado
                 </Text>
             </View>
         );
@@ -82,8 +82,9 @@ export default function RestTimer({ restTime = 90, onComplete }) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <Icon name="timer" size={24} color={colors.neutral.gray600} />
                 <Text variant="h3" color="neutral.gray600">
-                    ⏱️ Descanso
+                    Descanso
                 </Text>
             </View>
 
@@ -127,9 +128,11 @@ export default function RestTimer({ restTime = 90, onComplete }) {
                     style={[styles.controlButton, styles.pauseButton]}
                     onPress={togglePause}
                 >
-                    <Text variant="bodySmall" style={{ color: colors.neutral.white }} bold>
-                        {isPaused ? '▶️' : '⏸️'}
-                    </Text>
+                    <Icon
+                        name={isPaused ? 'play' : 'pause'}
+                        size={20}
+                        color={colors.neutral.white}
+                    />
                 </Pressable>
 
                 <Pressable
@@ -145,8 +148,9 @@ export default function RestTimer({ restTime = 90, onComplete }) {
             <Button
                 variant="ghost"
                 onPress={skip}
+                icon="play-skip-forward"
             >
-                ⏭️ Saltar
+                Saltar
             </Button>
         </View>
     );
@@ -162,6 +166,9 @@ const styles = StyleSheet.create({
         borderRadius: radius.lg,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
         marginBottom: spacing.lg,
     },
     timerCircle: {
@@ -184,18 +191,25 @@ const styles = StyleSheet.create({
         backgroundColor: colors.neutral.gray100,
         paddingVertical: spacing.sm + 2,
         paddingHorizontal: spacing.base,
-        borderRadius: radius.base,
-        minWidth: 60,
+        borderRadius: radius.lg,
+        minWidth: 65,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.neutral.gray200,
     },
     pauseButton: {
         backgroundColor: colors.primary.main,
+        borderColor: colors.primary.main,
+        paddingHorizontal: spacing.lg,
     },
     completedContainer: {
-        backgroundColor: colors.success.main,
+        backgroundColor: colors.primary.main,
         padding: spacing.base,
         marginBottom: spacing.sm + 2,
         alignItems: 'center',
         borderRadius: radius.base,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: spacing.sm,
     },
 });

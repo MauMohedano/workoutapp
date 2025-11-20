@@ -9,7 +9,7 @@
  */
 
 
-const LOCAL_IP = '192.168.1.70';  // ← Mi IP está cambiando constantemente
+const LOCAL_IP = '192.168.1.68';  // ← Mi IP está cambiando constantemente
 
 // Puerto del backend 
 const PORT = 3003;

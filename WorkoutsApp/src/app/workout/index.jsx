@@ -11,8 +11,8 @@ import { getDeviceId } from '../../utils/deviceId';
 import { useState, useEffect } from 'react';
 
 // Design System
-import { colors, spacing, radius, shadows, Icon } from '@/design-systems/tokens';  // ← AGREGAR shadows, Icon
-import { Text, Button, Card, CircularProgress } from '@/design-systems/components';  // ← Verificar CircularProgress
+import { colors, spacing, radius, shadows, Icon } from '@/design-systems/tokens';  
+import { Text, Button, Card, CircularProgress } from '@/design-systems/components'; 
 
 // Workout Stats
 import { getWorkoutStats } from '../../utils/workoutStats';
@@ -287,36 +287,49 @@ export default function WorkoutScreen() {
                 {/* Último entrenamiento */}
                 {lastWorkout?.hasHistory ? (
                     <View style={styles.historyCard}>
-                        <Text
-                            variant="body"
-                            color="neutral.gray600"
-                            bold
-                            style={{ marginBottom: spacing.xs }}
-                        >
-                            📊 Último entrenamiento (Sesión {lastWorkout.sessionNumber})
-                        </Text>
-                        {lastWorkout.sets.map((set, idx) => (
-                            <Text
-                                key={set._id}
-                                variant="bodySmall"
-                                color="neutral.gray600"
-                            >
-                                • Set {idx + 1}: {set.weight}kg × {set.reps} reps
+                        <View style={styles.historyHeader}>
+                            <Icon name="history" size={20} color={colors.primary.main} />
+                            <Text variant="bodySmall" color="neutral.gray700" bold>
+                                Último entrenamiento
                             </Text>
-                        ))}
+                            <View style={styles.sessionBadge}>
+                                <Text variant="caption" color="primary.main" bold>
+                                    Sesión {lastWorkout.sessionNumber}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.setsContainer}>
+                            {lastWorkout.sets.map((set, idx) => (
+                                <View key={set._id} style={styles.setRow}>
+                                    <Text variant="caption" color="neutral.gray500">
+                                        Set {idx + 1}
+                                    </Text>
+                                    <View style={styles.setValues}>
+                                        <Text variant="bodySmall" color="neutral.gray800" bold>
+                                            {set.weight}kg
+                                        </Text>
+                                        <Text variant="caption" color="neutral.gray400">
+                                            ×
+                                        </Text>
+                                        <Text variant="bodySmall" color="neutral.gray800" bold>
+                                            {set.reps} reps
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
                     </View>
                 ) : (
                     <View style={styles.historyCard}>
-                        <Text
-                            variant="body"
-                            color="neutral.gray600"
-                            bold
-                            style={{ marginBottom: spacing.xs }}
-                        >
-                            📊 Primer entrenamiento
-                        </Text>
-                        <Text variant="bodySmall" color="neutral.gray600">
-                            Este es tu primer registro de este ejercicio. ¡Dale con todo! 💪
+                        <View style={styles.historyHeader}>
+                            <Icon name="flame" size={20} color={colors.primary.main} />
+                            <Text variant="bodySmall" color="neutral.gray700" bold>
+                                Primer entrenamiento
+                            </Text>
+                        </View>
+                        <Text variant="bodySmall" color="neutral.gray500" style={{ marginTop: spacing.sm }}>
+                            Este es tu primer registro de este ejercicio. ¡Dale con todo!
                         </Text>
                     </View>
                 )}
@@ -592,12 +605,42 @@ const styles = StyleSheet.create({
 
     // ===== HISTORY CARD =====
     historyCard: {
-        backgroundColor: colors.neutral.gray50,
-        padding: spacing.base,
-        marginBottom: spacing.sm + 2,
-        borderLeftWidth: 4,
-        borderLeftColor: colors.primary.main,
-    },
+    backgroundColor: colors.neutral.gray50,
+    padding: spacing.base,
+    marginBottom: spacing.sm + 2,
+    borderRadius: radius.base,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary.main,
+},
+historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+},
+sessionBadge: {
+    backgroundColor: colors.primary.main + '15',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    marginLeft: 'auto',
+},
+setsContainer: {
+    gap: spacing.xs,
+},
+setRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.white,
+    padding: spacing.sm,
+    borderRadius: radius.base,
+},
+setValues: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+},
 
     // ===== NAVIGATION =====
     navigationSection: {
