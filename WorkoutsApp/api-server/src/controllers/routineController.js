@@ -6,10 +6,13 @@ const getRoutines = async (req, res) => {
   try {
     const { deviceId } = req.query;
     
-    const routines = await Routine.find()
+    // Filtrar por deviceId si existe
+    const filter = deviceId ? { deviceId } : {};
+
+    const routines = await Routine.find(filter)
       .select('_id name description isActive days totalSessions createdAt')
       .sort({ createdAt: -1 });
-
+      
     // Si hay deviceId, agregar el progreso de cada rutina
     if (deviceId) {
       const routinesWithProgress = await Promise.all(
@@ -18,7 +21,7 @@ const getRoutines = async (req, res) => {
             deviceId,
             routineId: routine._id
           });
-          
+
           return {
             ...routine.toObject(),
             progress: progress ? {
@@ -33,7 +36,7 @@ const getRoutines = async (req, res) => {
           };
         })
       );
-      
+
       return res.json(routinesWithProgress);
     }
 
@@ -65,8 +68,12 @@ const getRoutineById = async (req, res) => {
 // POST - Crear nueva rutina
 const createRoutine = async (req, res) => {
   try {
-    const { name, description, days, totalSessions } = req.body;
+    const { name, description, days, totalSessions, deviceId } = req.body;
 
+    // Validaciones
+    if (!deviceId) {
+      return res.status(400).json({ error: 'deviceId es requerido' });
+    }
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'El nombre es requerido' });
     }
@@ -107,6 +114,7 @@ const createRoutine = async (req, res) => {
     }));
 
     const newRoutine = new Routine({
+      deviceId,
       name: name.trim(),
       description: description || '',
       totalSessions: parseInt(totalSessions),

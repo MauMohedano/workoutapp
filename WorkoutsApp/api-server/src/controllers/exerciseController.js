@@ -14,13 +14,17 @@ const getExercises = async (req, res) => {
 const createExercise = async (req, res) => {
   try {
     console.log('📦 BODY recibido:', req.body);
-    
-    // ✅ EXTRAER TODOS LOS CAMPOS DEL BODY (INCLUYENDO sessionNumber)
-    const { exercise, reps, weight, sessionNumber, routineExerciseId } = req.body;
+
+    const { exercise, reps, weight, sessionNumber, routineExerciseId, deviceId, routineId } = req.body;
 
     // Validaciones
     if (!exercise || reps == null || weight == null) {
       return res.status(400).json({ error: 'exercise, reps y weight son requeridos' });
+    }
+
+    // Validar nuevos campos requeridos
+    if (!deviceId || !routineId) {
+      return res.status(400).json({ error: 'deviceId y routineId son requeridos' });
     }
 
     // ✅ VALIDAR sessionNumber (ahora es requerido)
@@ -29,14 +33,16 @@ const createExercise = async (req, res) => {
     }
 
     // ✅ CREAR CON sessionNumber CORRECTAMENTE
-    const newExercise = new Exercise({ 
-      exercise, 
-      reps: Number(reps), 
+    const newExercise = new Exercise({
+      deviceId,
+      routineId,
+      exercise,
+      reps: Number(reps),
       weight: Number(weight),
-      sessionNumber: Number(sessionNumber),  // ✅ Ahora sí está definido
+      sessionNumber: Number(sessionNumber),
       routineExerciseId: routineExerciseId || undefined
     });
-    
+
     const savedExercise = await newExercise.save();
 
     console.log('✅ Set guardado con sessionNumber:', savedExercise.sessionNumber);
@@ -83,9 +89,9 @@ const updateExercise = async (req, res) => {
 const getLastWorkout = async (req, res) => {
   try {
     const { exerciseName, currentSession } = req.query;
-    
+
     console.log('🔍 Buscando historial de:', exerciseName, '| Sesión actual:', currentSession);
-    
+
     if (!exerciseName) {
       return res.status(400).json({ error: 'exerciseName es requerido' });
     }
@@ -97,9 +103,9 @@ const getLastWorkout = async (req, res) => {
       exercise: exerciseName,
       sessionNumber: { $lt: currentSessionNum }  // ✅ Solo sesiones anteriores
     })
-    .sort({ sessionNumber: -1, createdAt: -1 })  // Más reciente primero
-    .limit(20)  // Últimos 20 sets para agrupar
-    .select('_id exercise reps weight sessionNumber createdAt');
+      .sort({ sessionNumber: -1, createdAt: -1 })  // Más reciente primero
+      .limit(20)  // Últimos 20 sets para agrupar
+      .select('_id exercise reps weight sessionNumber createdAt');
 
     console.log('📊 Sets previos encontrados:', previousSets.length);
 

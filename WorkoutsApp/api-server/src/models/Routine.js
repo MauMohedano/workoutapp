@@ -61,6 +61,11 @@ const DaySchema = new mongoose.Schema({
 
 // Esquema principal de Rutina
 const RoutineSchema = new mongoose.Schema({
+   deviceId: {
+    type: String,
+    required: true,
+    index: true
+  },
   name: { 
     type: String, 
     required: true,

@@ -1,8 +1,8 @@
 import { View, StyleSheet, ScrollView, Alert, Pressable, Modal, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
+import { getDeviceId } from '../../utils/deviceId';
 import ExercisePicker from '../../components/ExercisePicker';
 // API
 import { createRoutine } from '../../api/routineApi';
@@ -43,6 +43,15 @@ export default function ConfigureDaysScreen() {
   // Exercise Picker
   const [exercisePickerVisible, setExercisePickerVisible] = useState(false);
   const [currentDayIndex, setCurrentDayIndex] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+
+  useEffect(() => {
+    const loadDeviceId = async () => {
+      const id = await getDeviceId();
+      setDeviceId(id);
+    };
+    loadDeviceId();
+  }, []);
 
   // Modal de configuración de ejercicio
   const [configModalVisible, setConfigModalVisible] = useState(false);
@@ -57,7 +66,7 @@ export default function ConfigureDaysScreen() {
   const createMutation = useMutation({
     mutationFn: createRoutine,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['routines'] });
+      queryClient.invalidateQueries({ queryKey: ['routines'], exact: false });
 
       Alert.alert(
         '¡Rutina Creada! 🎉',
@@ -109,6 +118,7 @@ export default function ConfigureDaysScreen() {
     }
 
     const routineData = {
+      deviceId,
       name: routineName,
       description: description || undefined,
       totalSessions: parseInt(totalSessions),
@@ -499,22 +509,22 @@ export default function ConfigureDaysScreen() {
                 </View>
 
                 {/* Botones de acción */}
-               <View style={styles.configActions}>
-       <Button
-  variant="secondary"
-  onPress={() => setConfigModalVisible(false)}
-  containerStyle={{ flex: 1 }}
->
-  Cancelar
-</Button>
-<Button
-  variant="primary"
-  onPress={handleConfirmExercise}
-  containerStyle={{ flex: 1 }}
->
-  Agregar
-</Button>
-      </View>
+                <View style={styles.configActions}>
+                  <Button
+                    variant="secondary"
+                    onPress={() => setConfigModalVisible(false)}
+                    containerStyle={{ flex: 1 }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onPress={handleConfirmExercise}
+                    containerStyle={{ flex: 1 }}
+                  >
+                    Agregar
+                  </Button>
+                </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -703,16 +713,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   repsInput: {
-  backgroundColor: colors.neutral.gray100,
-  borderRadius: radius.base,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: colors.neutral.gray800,
-  textAlign: 'center',
-  width: 140,
-},
+    backgroundColor: colors.neutral.gray100,
+    borderRadius: radius.base,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.neutral.gray800,
+    textAlign: 'center',
+    width: 140,
+  },
   configActions: {
     flexDirection: 'row',
     gap: spacing.sm,

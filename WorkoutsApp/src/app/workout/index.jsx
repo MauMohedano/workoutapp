@@ -229,15 +229,16 @@ export default function WorkoutScreen() {
 
 
 
-            {/* Input para nuevo set - Solo si NO es read-only */}
-            {!isReadOnly && (
-                <NewSetInput
-                    exerciseName={currentExercise.name}
-                    routineExerciseId={currentExercise._id}
-                    sessionNumber={sessionNumber}
-                    restTime={currentExercise.restTime || 90}
-                />
-            )}
+           {!isReadOnly && (
+    <NewSetInput
+        exerciseName={currentExercise.name}
+        routineExerciseId={currentExercise._id}
+        sessionNumber={sessionNumber}
+        deviceId={deviceId}
+        routineId={routineId}
+        restTime={currentExercise.restTime || 90}
+    />
+)}
 
 
 

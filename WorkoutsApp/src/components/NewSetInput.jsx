@@ -9,9 +9,11 @@ import { colors, spacing, radius, shadows, Icon } from '@/design-systems/tokens'
 import { Button, Text } from '@/design-systems/components';
 
 const NewSetInput = ({ 
-  exerciseName, 
+ exerciseName, 
   routineExerciseId, 
-  sessionNumber, 
+  sessionNumber,
+  deviceId,        
+  routineId,      
   restTime = 90,
   targetSets = 4,
   targetReps = 10 
@@ -55,13 +57,15 @@ const NewSetInput = ({
       return;
     }
 
-    mutation.mutate({
-      exercise: exerciseName,
-      reps: parseInt(reps),
-      weight: parseInt(weight),
-      sessionNumber: sessionNumber ? parseInt(sessionNumber) : undefined,
-      routineExerciseId: routineExerciseId || undefined
-    });
+   mutation.mutate({
+  exercise: exerciseName,
+  reps: parseInt(reps),
+  weight: parseInt(weight),
+  sessionNumber: sessionNumber ? parseInt(sessionNumber) : undefined,
+  routineExerciseId: routineExerciseId || undefined,
+  deviceId,      
+  routineId      
+});
   };
 
   const handleTimerComplete = () => {

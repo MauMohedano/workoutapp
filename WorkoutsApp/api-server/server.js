@@ -8,6 +8,9 @@ const ninjaRoutes = require('./src/routes/ninjaRoutes')
 const routineRoutes = require('./src/routes/routineRoutes');
 const sessionProgressRoutes = require('./src/routes/sessionProgressRoutes');
 const exerciseCatalogRoutes = require('./src/routes/exerciseCatalogRoutes');
+const statsRoutes = require('./src/routes/statsRoutes');
+
+
 
 const app = express();
 app.use(cors());
@@ -19,6 +22,7 @@ app.use('/api/ninja', ninjaRoutes);
 app.use('/api/routines', routineRoutes);
 app.use('/api/session-progress', sessionProgressRoutes);
 app.use('/api/catalog', exerciseCatalogRoutes)
+app.use('/api/stats', statsRoutes);
 
 // Conexión a Mongo
 mongoose.connect(process.env.MONGO_URI)

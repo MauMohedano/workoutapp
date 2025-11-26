@@ -9,6 +9,8 @@ import { colors, spacing, typography, radius, shadows, Icon } from '@/design-sys
 import { Text, Button, Card, CircularProgress } from '@/design-systems/components';
 import { getDeviceId } from "../utils/deviceId";
 import { useSessionProgress } from '../hooks/useSessionProgress';
+import { useWorkoutStats } from '../hooks/useWorkoutStats';
+import StatsHighlight from '../components/stats/StatsHighlight';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -41,6 +43,9 @@ export default function HomeScreen() {
     progress: sessionProgress,
     isLoading: isLoadingProgress,
   } = useSessionProgress(activeRoutine?._id);
+
+  const { data: statsData, isLoading: isLoadingStats } = useWorkoutStats(deviceId);
+
 
   // ===== LOADING STATE =====
   if (isLoading) {
@@ -149,88 +154,90 @@ export default function HomeScreen() {
         </View>
 
         {/* ===== SECCIÓN 2: RUTINA ACTIVA ===== */}
-        {data && data.length > 0 && activeRoutine && (
+        {data && data.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icon name="flame" size={20} color={colors.primary.main} />
-              <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
-                Rutina Activa
-              </Text>
-            </View>
-
-            {/* Card de rutina activa */}
-            <Pressable onPress={() => router.push(`/routines/${activeRoutine._id}`)}>
-              <View style={styles.activeRoutineCard}>
-                {/* Header */}
-                <View style={styles.activeRoutineHeader}>
-                  <Icon name="dumbbell" size={28} color={colors.neutral.white} />
-                  <View style={styles.activeRoutineInfo}>
-                    <Text variant="h2" style={styles.activeRoutineTitle}>
-                      {activeRoutine.name}
-                    </Text>
-                    <Text variant="bodySmall" style={styles.activeRoutineMeta}>
-                      Sesión {currentSession} de {activeRoutine.totalSessions}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progreso */}
-                <View style={styles.activeRoutineProgress}>
-                  <View style={styles.progressBarContainer}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${Math.round((currentSession / activeRoutine.totalSessions) * 100)}%` }
-                      ]}
-                    />
-                  </View>
-                  <Text variant="caption" style={styles.progressText}>
-                    {completedSessions?.length || 0} completadas • {activeRoutine.totalSessions - currentSession + 1} restantes
+            {/* Si hay rutina activa, mostrar card */}
+            {activeRoutine ? (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Icon name="flame" size={20} color={colors.primary.main} />
+                  <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
+                    Rutina Activa
                   </Text>
                 </View>
 
-                {/* Botón */}
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  fullWidth
-                  icon="play-circle"
-                  onPress={() => router.push(`/routines/${activeRoutine._id}`)}
-                >
-                  Iniciar Sesión {currentSession}
-                </Button>
-              </View>
-            </Pressable>
+                <Pressable onPress={() => router.push(`/routines/${activeRoutine._id}`)}>
+                  <View style={styles.activeRoutineCard}>
+                    {/* Header */}
+                    <View style={styles.activeRoutineHeader}>
+                      <Icon name="dumbbell" size={28} color={colors.neutral.white} />
+                      <View style={styles.activeRoutineInfo}>
+                        <Text variant="h2" style={styles.activeRoutineTitle}>
+                          {activeRoutine.name}
+                        </Text>
+                        <Text variant="bodySmall" style={styles.activeRoutineMeta}>
+                          Sesión {currentSession} de {activeRoutine.totalSessions}
+                        </Text>
+                      </View>
+                    </View>
 
-            {/* Link a todas las rutinas */}
+                    {/* Progreso */}
+                    <View style={styles.activeRoutineProgress}>
+                      <View style={styles.progressBarContainer}>
+                        <View
+                          style={[
+                            styles.progressBarFill,
+                            { width: `${Math.round((currentSession / activeRoutine.totalSessions) * 100)}%` }
+                          ]}
+                        />
+                      </View>
+                      <Text variant="caption" style={styles.progressText}>
+                        {completedSessions?.length || 0} completadas • {activeRoutine.totalSessions - currentSession + 1} restantes
+                      </Text>
+                    </View>
+
+                    {/* Botón */}
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      fullWidth
+                      icon="play-circle"
+                      onPress={() => router.push(`/routines/${activeRoutine._id}`)}
+                    >
+                      Iniciar Sesión {currentSession}
+                    </Button>
+                  </View>
+                </Pressable>
+              </>
+            ) : (
+              /* Si NO hay rutina activa, mostrar placeholder */
+              <>
+                <View style={styles.sectionHeader}>
+                  <Icon name="flame" size={20} color={colors.neutral.gray600} />
+                  <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
+                    Rutina Activa
+                  </Text>
+                </View>
+
+                <Card style={styles.placeholderCard}>
+                  <Icon name="starActive" size={32} color={colors.neutral.gray300} />
+                  <Text variant="body" color="neutral.gray500" style={{ marginTop: spacing.sm }}>
+                    Activa una rutina para comenzar a entrenar
+                  </Text>
+                </Card>
+              </>
+            )}
+
+            {/* Link a todas las rutinas - SIEMPRE visible si hay rutinas */}
             <Pressable
               style={styles.viewAllLink}
-              onPress={() => setIsRoutinesExpanded(!isRoutinesExpanded)}
+              onPress={() => router.push(`/routines?deviceId=${deviceId}`)}
             >
               <Text variant="bodySmall" color="primary.main" style={{ fontWeight: '600' }}>
                 Ver todas mis rutinas
               </Text>
-              <Icon name="chevron-down" size={16} color={colors.primary.main} />
+              <Icon name="chevron-right" size={16} color={colors.primary.main} />
             </Pressable>
-          </View>
-        )}
-
-        {/* Caso: Tiene rutinas pero ninguna activa */}
-        {data && data.length > 0 && !activeRoutine && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icon name="flame" size={20} color={colors.neutral.gray600} />
-              <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
-                Rutina Activa
-              </Text>
-            </View>
-
-            <Card style={styles.placeholderCard}>
-              <Icon name="starActive" size={32} color={colors.neutral.gray300} />
-              <Text variant="body" color="neutral.gray500" style={{ marginTop: spacing.sm }}>
-                Activa una rutina para comenzar a entrenar
-              </Text>
-            </Card>
           </View>
         )}
 
@@ -317,6 +324,14 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ===== SECCIÓN 3.5: ESTADÍSTICAS ===== */}
+        {data && data.length > 0 && statsData && (
+          <View style={styles.section}>
+            <StatsHighlight stats={statsData} deviceId={deviceId} />
+          </View>
+        )}
+
+
         {/* ===== SECCIÓN 4: MEDICIONES (Placeholder) ===== */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -336,14 +351,13 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* FAB */}
-      {data && data.length > 0 && (
-        <Pressable
-          style={styles.fab}
-          onPress={() => router.push('/create-routine')}
-        >
-          <Icon name="add" size={28} color={colors.neutral.white} />
-        </Pressable>
-      )}
+
+      <Pressable
+        style={styles.fab}
+        onPress={() => router.push('/create-routine')}
+      >
+        <Icon name="add" size={28} color={colors.neutral.white} />
+      </Pressable>
 
       <StatusBar style="auto" />
     </View>
