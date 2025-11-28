@@ -12,5 +12,6 @@ export const useWorkoutStats = (deviceId, period = 'all') => {
     queryFn: () => getUserStats(deviceId, period),
     enabled: !!deviceId,
     staleTime: 1000 * 60 * 5, // 5 minutos
+    placeholderData: (previousData) => previousData,  // 👈 AGREGAR ESTO
   });
 };

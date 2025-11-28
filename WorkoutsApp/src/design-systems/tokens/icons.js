@@ -11,15 +11,17 @@ export const iconMap = {
   home: 'home-outline',
   back: 'arrow-back',
   close: 'close',
-   'chevron-up': 'chevron-up',
+  'chevron-up': 'chevron-up',
   'chevron-down': 'chevron-down',
-  'snow': 'snow-outline', 
+  'snow': 'snow-outline',
   'chevron-right': 'chevron-forward',
 
   // Acciones
   add: 'add-circle-outline',
   edit: 'create-outline',
   delete: 'trash-outline',
+  save: 'save-outline',
+  note: 'document-text-outline',
 
   person: 'person-outline',
 
@@ -32,6 +34,14 @@ export const iconMap = {
   star: 'star-outline',
   starActive: 'star',
 
+  // Mediciones
+  ruler: 'resize-outline',
+  scale: 'analytics-outline',
+  analytics: 'analytics-outline',
+  'arrow-up': 'arrow-up',
+  'arrow-down': 'arrow-down',
+  'arrow-forward': 'arrow-forward',
+
   // Estados
   error: 'alert-circle-outline',
   success: 'checkmark-circle-outline',
@@ -41,14 +51,13 @@ export const iconMap = {
   pause: 'pause-outline',
   'play-circle': 'play-circle-outline',
   'play-skip-forward': 'play-skip-forward-outline',
-   
 
-   history: 'time-outline',        
-  copy: 'copy-outline',         
-  target: 'radio-button-on',     
-  remove: 'remove-circle',       
- trophy: 'trophy-outline',       
-  checkmark: 'checkmark', 
+  history: 'time-outline',
+  copy: 'copy-outline',
+  target: 'radio-button-on',
+  remove: 'remove-circle',
+  trophy: 'trophy-outline',
+  checkmark: 'checkmark',
 };
 
 export const iconSizes = {

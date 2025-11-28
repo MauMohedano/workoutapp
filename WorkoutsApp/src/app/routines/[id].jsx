@@ -191,7 +191,7 @@ export default function RoutineDetailScreen() {
                     <Stack.Screen options={{ title: routine.name }} />
 
                     {/* Header con progreso */}
-                    {/* Header con progreso MEJORADO */}
+                    
                     <View style={styles.header}>
                         {/* Título de la rutina */}
                         <View style={styles.headerTitle}>

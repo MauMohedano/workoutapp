@@ -9,6 +9,7 @@ const routineRoutes = require('./src/routes/routineRoutes');
 const sessionProgressRoutes = require('./src/routes/sessionProgressRoutes');
 const exerciseCatalogRoutes = require('./src/routes/exerciseCatalogRoutes');
 const statsRoutes = require('./src/routes/statsRoutes');
+const measurementRoutes = require('./src/routes/measurementRoutes');
 
 
 
@@ -23,6 +24,7 @@ app.use('/api/routines', routineRoutes);
 app.use('/api/session-progress', sessionProgressRoutes);
 app.use('/api/catalog', exerciseCatalogRoutes)
 app.use('/api/stats', statsRoutes);
+app.use('/api/measurements', measurementRoutes);
 
 // Conexión a Mongo
 mongoose.connect(process.env.MONGO_URI)
@@ -34,6 +36,7 @@ mongoose.connect(process.env.MONGO_URI)
       console.log('🔍 Ninja API: http://localhost:3003/api/ninja/exercises');
       console.log('💪 Routines API: http://localhost:3003/api/routines');
        console.log('📚 Catalog API: http://localhost:3003/api/catalog/search')
+       console.log('📏 Measurements API: http://localhost:3003/api/measurements');
     });
   })
   .catch(err => console.error(err));

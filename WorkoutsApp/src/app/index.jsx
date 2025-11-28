@@ -11,12 +11,15 @@ import { getDeviceId } from "../utils/deviceId";
 import { useSessionProgress } from '../hooks/useSessionProgress';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import StatsHighlight from '../components/stats/StatsHighlight';
+import { useLatestMeasurement } from '../hooks/useMeasurements';
+import { getCurrentDayName, getUpcomingSessions, getCompletedSessionsCount, getRemainingSessionsCount } from '@/utils/routineHelpers';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [deviceId, setDeviceId] = useState(null);
   const [isRoutinesExpanded, setIsRoutinesExpanded] = useState(false);
-
+  const { data: latestMeasurementResponse } = useLatestMeasurement(deviceId);
+  const latestMeasurement = latestMeasurementResponse?.data;
 
   useEffect(() => {
     const loadDeviceId = async () => {
@@ -128,8 +131,8 @@ export default function HomeScreen() {
               <Text variant="h2" color="primary.main">
                 {data?.length || 0}
               </Text>
-              <Text variant="caption" color="neutral.gray500">
-                {data?.length === 1 ? 'Rutina' : 'Rutinas'}
+              <Text variant="caption" color="neutral.gray500" align="center" numberOfLines={1}>
+                Rutinas
               </Text>
             </View>
 
@@ -137,8 +140,8 @@ export default function HomeScreen() {
               <Text variant="h2" color="primary.main">
                 {data?.reduce((sum, r) => sum + (r.progress?.completedSessions?.length || 0), 0) || 0}
               </Text>
-              <Text variant="caption" color="neutral.gray500">
-                Completadas
+              <Text variant="caption" color="neutral.gray500" align="center" numberOfLines={2}>
+                Sesiones{'\n'}completadas
               </Text>
             </View>
 
@@ -146,8 +149,8 @@ export default function HomeScreen() {
               <Text variant="h2" color="primary.main">
                 {Math.ceil((data?.reduce((sum, r) => sum + (r.progress?.completedSessions?.length || 0), 0) || 0) / 3) || 0}
               </Text>
-              <Text variant="caption" color="neutral.gray500">
-                Semanas
+              <Text variant="caption" color="neutral.gray500" align="center" numberOfLines={2}>
+                Semanas{'\n'}completadas
               </Text>
             </View>
           </View>
@@ -204,8 +207,51 @@ export default function HomeScreen() {
                       icon="play-circle"
                       onPress={() => router.push(`/routines/${activeRoutine._id}`)}
                     >
-                      Iniciar Sesión {currentSession}
+                      Ir a sesión: <Text style={{ fontWeight: 'bold', color: colors.primary.main }}>{getCurrentDayName(activeRoutine)}</Text>
                     </Button>
+
+
+                    {/* Próximas Sesiones */}
+                    {getUpcomingSessions(activeRoutine).length > 0 && (
+                      <View style={styles.upcomingSessions}>
+                        <View style={styles.upcomingDivider} />
+                        <Text variant="caption" style={styles.upcomingTitle}>
+                          Próximas:
+                        </Text>
+                        {getUpcomingSessions(activeRoutine).map((session, index) => (
+                          <Pressable
+                            key={index}
+                            style={styles.upcomingSessionCard}
+                            onPress={() => router.push(`/routines/session-preview?routineId=${activeRoutine._id}&sessionNumber=${session.sessionNumber}&deviceId=${deviceId}`)}
+                          >
+                            <View style={styles.upcomingCardContent}>
+                              <View style={styles.upcomingCardHeader}>
+                                <Icon name="dumbbell" size={18} color={`${colors.neutral.white}90`} />
+                                <Text variant="bodySmall" style={styles.upcomingCardTitle}>
+                                  Sesión {session.sessionNumber} · {session.dayName}
+                                </Text>
+                                <Icon name="chevron-right" size={18} color={`${colors.neutral.white}60`} style={{ marginLeft: 'auto' }} />
+                              </View>
+                              <View style={styles.upcomingCardDetails}>
+                                <View style={styles.upcomingCardDetailItem}>
+                                  <Icon name="list" size={14} color={`${colors.neutral.white}70`} />
+                                  <Text variant="caption" style={styles.upcomingCardDetailText}>
+                                    {session.exerciseCount} ejercicios
+                                  </Text>
+                                </View>
+                                <View style={styles.upcomingCardDetailItem}>
+                                  <Icon name="time" size={14} color={`${colors.neutral.white}70`} />
+                                  <Text variant="caption" style={styles.upcomingCardDetailText}>
+                                    ~{session.exerciseCount * 8} min
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+
                   </View>
                 </Pressable>
               </>
@@ -230,13 +276,13 @@ export default function HomeScreen() {
 
             {/* Link a todas las rutinas - SIEMPRE visible si hay rutinas */}
             <Pressable
-              style={styles.viewAllLink}
-              onPress={() => router.push(`/routines?deviceId=${deviceId}`)}
-            >
-              <Text variant="bodySmall" color="primary.main" style={{ fontWeight: '600' }}>
+  style={styles.seeAllButton}
+  onPress={() => router.push(`/routines?deviceId=${deviceId}`)}
+>
+              <Text variant="bodyMedium" color="primary.main" style={{ fontWeight: '600' }}>
                 Ver todas mis rutinas
               </Text>
-              <Icon name="chevron-right" size={16} color={colors.primary.main} />
+              <Icon name="chevron-right" size={20} color={colors.primary.main} />
             </Pressable>
           </View>
         )}
@@ -332,22 +378,91 @@ export default function HomeScreen() {
         )}
 
 
-        {/* ===== SECCIÓN 4: MEDICIONES (Placeholder) ===== */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Icon name="trophy" size={20} color={colors.neutral.gray600} />
-            <Text variant="bodyLarge" color="neutral.gray800" style={{ fontWeight: '600' }}>
-              Mis Mediciones
-            </Text>
-          </View>
+        {/* ===== SECCIÓN 4: MEDICIONES ===== */}
+        <Pressable onPress={() => router.push(`/measurements?deviceId=${deviceId}`)}>
+          <Card shadow="md" style={styles.infoCard}>
+            <View style={styles.infoCardHeader}>
+              <View style={styles.infoCardTitleRow}>
+                <Icon name="ruler" size={24} color={colors.primary.main} />
+                <Text variant="bodyLarge" color="neutral.gray800" bold>
+                  Mediciones
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={20} color={colors.neutral.gray400} />
+            </View>
 
-          <Card style={styles.placeholderCard}>
-            <Icon name="target" size={32} color={colors.neutral.gray300} />
-            <Text variant="body" color="neutral.gray500" style={{ marginTop: spacing.sm }}>
-              Próximamente: Trackea tus mediciones corporales
-            </Text>
+            {latestMeasurement ? (
+              <View style={styles.measurementsContent}>
+                {/* Peso */}
+                {latestMeasurement.weight && (
+                  <View style={styles.measurementMainStat}>
+                    <Text variant="h2" color="neutral.gray900">
+                      {latestMeasurement.weight}
+                    </Text>
+                    <Text variant="bodyMedium" color="neutral.gray600" style={{ marginLeft: 4 }}>
+                      kg
+                    </Text>
+                  </View>
+                )}
+
+                {/* Circunferencias destacadas */}
+                {latestMeasurement.circumferences && (
+                  <View style={styles.measurementsGrid}>
+                    {latestMeasurement.circumferences.chest && (
+                      <View style={styles.measurementItem}>
+                        <Text variant="caption" color="neutral.gray500">
+                          Pecho
+                        </Text>
+                        <Text variant="bodyMedium" color="neutral.gray800" bold>
+                          {latestMeasurement.circumferences.chest} cm
+                        </Text>
+                      </View>
+                    )}
+                    {latestMeasurement.circumferences.waist && (
+                      <View style={styles.measurementItem}>
+                        <Text variant="caption" color="neutral.gray500">
+                          Cintura
+                        </Text>
+                        <Text variant="bodyMedium" color="neutral.gray800" bold>
+                          {latestMeasurement.circumferences.waist} cm
+                        </Text>
+                      </View>
+                    )}
+                    {latestMeasurement.circumferences.leftArm && (
+                      <View style={styles.measurementItem}>
+                        <Text variant="caption" color="neutral.gray500">
+                          Brazo
+                        </Text>
+                        <Text variant="bodyMedium" color="neutral.gray800" bold>
+                          {latestMeasurement.circumferences.leftArm} cm
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                <View style={styles.measurementsFooter}>
+                  <Text variant="caption" color="neutral.gray500">
+                    Última actualización:{' '}
+                    {new Date(latestMeasurement.date).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.measurementsEmpty}>
+                <Text variant="body" color="neutral.gray500" align="center">
+                  No has registrado mediciones aún
+                </Text>
+                <Text variant="bodySmall" color="primary.main" bold style={{ marginTop: spacing.xs }}>
+                  Toca para agregar tu primera medición
+                </Text>
+              </View>
+            )}
           </Card>
-        </View>
+        </Pressable>
       </ScrollView>
 
       {/* FAB */}
@@ -365,70 +480,71 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ===== CONTENEDORES PRINCIPALES =====
   container: {
     flex: 1,
     backgroundColor: colors.neutral.gray100,
   },
-
-  // ScrollView
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Espacio para el FAB
+    padding: spacing.base,
+    paddingBottom: 100,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
   },
 
-  // Header Section
+  seeAllButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: spacing.xs,
+  paddingVertical: spacing.sm,
+},
+
+  // ===== SECCIÓN 1: HEADER USUARIO =====
   headerSection: {
-    backgroundColor: colors.neutral.white,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.base,
-    gap: spacing.lg,
-    ...shadows.sm,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-
-  // Greeting
   greetingSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.primary.main + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary.main + '30',
   },
   greetingText: {
     flex: 1,
-    gap: 2,
   },
-
-  // Stats row
   statsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.neutral.gray50,
+    backgroundColor: colors.neutral.white,
     padding: spacing.md,
     borderRadius: radius.lg,
     alignItems: 'center',
-    gap: spacing.xs - 2,
-    borderWidth: 1,
-    borderColor: colors.neutral.gray200,
+    ...shadows.sm,
+    minHeight: 80,
+    justifyContent: 'center',
   },
 
-  // Sections
+  // ===== ESTRUCTURA DE SECCIONES (Compartido) =====
   section: {
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -437,13 +553,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
 
-  // Active Routine Card
+  // ===== SECCIÓN 2: RUTINA ACTIVA =====
   activeRoutineCard: {
     backgroundColor: colors.primary.main,
     padding: spacing.lg,
     borderRadius: radius.xl,
     gap: spacing.md,
-    ...shadows.xl,
+    ...shadows.lg,
   },
   activeRoutineHeader: {
     flexDirection: 'row',
@@ -455,14 +571,12 @@ const styles = StyleSheet.create({
   },
   activeRoutineTitle: {
     color: colors.neutral.white,
-    marginBottom: spacing.xs - 2,
+    fontWeight: '700',
   },
   activeRoutineMeta: {
-    color: colors.neutral.white,
-    opacity: 0.9,
+    color: colors.neutral.white + 'CC',
+    marginTop: spacing.xs - 2,
   },
-
-  // Progress
   activeRoutineProgress: {
     gap: spacing.xs,
   },
@@ -478,36 +592,60 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   progressText: {
-    color: colors.neutral.white,
-    opacity: 0.9,
-    textAlign: 'center',
+    color: colors.neutral.white + 'CC',
   },
 
-  // View all link
-  viewAllLink: {
+  // Próximas sesiones
+  upcomingSessions: {
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  upcomingDivider: {
+    height: 1,
+    backgroundColor: `${colors.neutral.white}20`,
+    marginBottom: spacing.sm,
+  },
+  upcomingTitle: {
+    color: `${colors.neutral.white}80`,
+    marginBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  upcomingSessionCard: {
+    backgroundColor: `${colors.neutral.white}15`,
+    borderRadius: radius.lg,
+    marginBottom: spacing.xs,
+    overflow: 'hidden',
+    borderColor: `${colors.neutral.white}20`
+  },
+  upcomingCardContent: {
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  upcomingCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs - 2,
-    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  upcomingCardTitle: {
+    color: `${colors.neutral.white}95`,
+    fontWeight: '600',
+    flex: 1,
+  },
+  upcomingCardDetails: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginLeft: spacing.lg + spacing.xs, // Alineado con el título
+  },
+  upcomingCardDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  upcomingCardDetailText: {
+    color: `${colors.neutral.white}70`,
   },
 
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primary.main + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-
-  // Routines List
+  // ===== SECCIÓN 3: MIS RUTINAS =====
   routinesList: {
     gap: spacing.md,
   },
@@ -521,10 +659,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral.gray200,
   },
-
-  // Routine Card
   routineCard: {
-    padding: spacing.base,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   routineCardHeader: {
@@ -544,8 +680,6 @@ const styles = StyleSheet.create({
   routineName: {
     flex: 1,
   },
-
-  // Badge activa
   activeBadge: {
     backgroundColor: colors.accent.main,
     paddingHorizontal: spacing.xs,
@@ -566,8 +700,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
   },
-
-  // Routine Stats
   routineStats: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -590,8 +722,6 @@ const styles = StyleSheet.create({
     height: 14,
     backgroundColor: colors.neutral.gray300,
   },
-
-  // Footer
   routineCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -602,18 +732,87 @@ const styles = StyleSheet.create({
     borderTopColor: colors.neutral.gray200,
   },
 
-  // Placeholder Card
+  // ===== CARDS DE INFORMACIÓN (Estadísticas y Mediciones) =====
+  // Estilos compartidos para ambos cards
+  infoCard: {
+    padding: spacing.lg,
+  },
+  infoCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  infoCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+
+  // ===== SECCIÓN 4: ESTADÍSTICAS =====
+  statsContent: {
+    gap: spacing.md,
+  },
+  statsGrid: {
+    gap: spacing.md,
+  },
+  statHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.neutral.gray50,
+    borderRadius: radius.base,
+  },
+  statHighlightInfo: {
+    flex: 1,
+  },
+
+  // ===== SECCIÓN 5: MEDICIONES =====
+  measurementsContent: {
+    gap: spacing.sm,
+  },
+  measurementMainStat: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: spacing.xs,
+  },
+  measurementsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  measurementItem: {
+    flex: 1,
+    gap: 2,
+  },
+  measurementsFooter: {
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.gray200,
+  },
+  measurementsEmpty: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+
+  // ===== ESTADOS ESPECIALES =====
   placeholderCard: {
     padding: spacing.xl,
     alignItems: 'center',
   },
-
-  // Error state
-  centerContainer: {
-    flex: 1,
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  emptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.primary.main + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    marginBottom: spacing.xl,
   },
   errorIcon: {
     width: 100,
@@ -624,7 +823,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // FAB
+  // ===== FAB =====
   fab: {
     position: 'absolute',
     right: spacing.base,

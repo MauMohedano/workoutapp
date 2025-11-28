@@ -1,14 +1,29 @@
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { View, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
+import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { useWorkoutStats } from '../../hooks/useWorkoutStats';
-import { colors, spacing, radius, shadows, Icon } from '@/design-systems/tokens';
-import { Text, Button, Card } from '@/design-systems/components';
+import { colors, spacing, Icon } from '@/design-systems/tokens';
+import { Text } from '@/design-systems/components';
+
+// Importar tabs
+import OverviewTab from '../../components/stats/OverviewTab';
+import PerformanceTab from '../../components/stats/PerformanceTab';
+import RecordsTab from '../../components/stats/RecordsTab';
 
 export default function StatsScreen() {
-  const router = useRouter();
+  const layout = useWindowDimensions();
   const { deviceId } = useLocalSearchParams();
   
-  const { data: stats, isLoading, error } = useWorkoutStats(deviceId);
+  const [currentPeriod, setCurrentPeriod] = useState('all');
+  const { data: stats, isLoading, error } = useWorkoutStats(deviceId, currentPeriod);
+
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'overview', title: 'Resumen', icon: 'home' },
+    { key: 'performance', title: 'Rendimiento', icon: 'analytics' },
+    { key: 'records', title: 'Records', icon: 'trophy' },
+  ]);
 
   // Loading state
   if (isLoading) {
@@ -48,19 +63,56 @@ export default function StatsScreen() {
         <Text variant="body" color="neutral.gray500" align="center" style={{ marginTop: spacing.sm, maxWidth: 280 }}>
           Completa algunos entrenamientos para ver tus estadísticas
         </Text>
-        <Button
-          variant="primary"
-          size="md"
-          onPress={() => router.back()}
-          style={{ marginTop: spacing.lg }}
-        >
-          Volver al inicio
-        </Button>
       </View>
     );
   }
 
-  const { volume, muscleDistribution, consistency, personalRecords } = stats;
+  // Render scenes
+  const renderScene = SceneMap({
+    overview: () => (
+      <OverviewTab 
+        stats={stats} 
+        onPeriodChange={setCurrentPeriod}
+        currentPeriod={currentPeriod}
+      />
+    ),
+    performance: () => (
+    <PerformanceTab 
+      stats={stats} 
+      onPeriodChange={setCurrentPeriod}
+      currentPeriod={currentPeriod}
+    />
+  ),
+    records: () => <RecordsTab stats={stats} />,
+  });
+
+  // Custom tab bar
+  const renderTabBar = (props) => (
+    <TabBar
+      {...props}
+      indicatorStyle={styles.tabIndicator}
+      style={styles.tabBar}
+      labelStyle={styles.tabLabel}
+      activeColor={colors.primary.main}
+      inactiveColor={colors.neutral.gray500}
+      renderIcon={({ route, focused }) => (
+        <Icon
+          name={route.icon}
+          size={20}
+          color={focused ? colors.primary.main : colors.neutral.gray500}
+        />
+      )}
+      renderLabel={({ route, focused }) => (
+        <Text
+          variant="bodySmall"
+          color={focused ? "primary.main" : "neutral.gray500"}
+          bold={focused}
+        >
+          {route.title}
+        </Text>
+      )}
+    />
+  );
 
   return (
     <View style={styles.container}>
@@ -70,179 +122,16 @@ export default function StatsScreen() {
           headerBackTitle: 'Atrás',
         }}
       />
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Stats */}
-        <View style={styles.headerSection}>
-          <Text variant="h1" color="neutral.gray900">
-            Tu Progreso
-          </Text>
-          <Text variant="body" color="neutral.gray500">
-            {stats.totalWorkouts} {stats.totalWorkouts === 1 ? 'entrenamiento' : 'entrenamientos'} completados
-          </Text>
-        </View>
 
-        {/* Volumen Total */}
-        <Card shadow="lg" style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="barbell" size={24} color={colors.primary.main} />
-            <Text variant="h3" color="neutral.gray800">
-              Volumen Total
-            </Text>
-          </View>
-          
-          <View style={styles.volumeGrid}>
-            <View style={styles.volumeItem}>
-              <Text variant="h1" color="primary.main" style={{ fontSize: 40 }}>
-                {volume.totalWeight}
-              </Text>
-              <Text variant="bodySmall" color="neutral.gray500">
-                kg levantados
-              </Text>
-            </View>
-            
-            <View style={styles.volumeStats}>
-              <View style={styles.volumeStat}>
-                <Text variant="h3" color="neutral.gray800">
-                  {volume.totalSets}
-                </Text>
-                <Text variant="caption" color="neutral.gray500">
-                  sets totales
-                </Text>
-              </View>
-              <View style={styles.volumeStat}>
-                <Text variant="h3" color="neutral.gray800">
-                  {volume.totalReps}
-                </Text>
-                <Text variant="caption" color="neutral.gray500">
-                  repeticiones
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Card>
-
-        {/* Distribución Muscular */}
-        <Card shadow="lg" style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="body" size={24} color={colors.primary.main} />
-            <Text variant="h3" color="neutral.gray800">
-              Distribución Muscular
-            </Text>
-          </View>
-          
-          <View style={styles.muscleList}>
-            {Object.entries(muscleDistribution)
-              .filter(([_, percentage]) => percentage > 0)
-              .sort(([_, a], [__, b]) => b - a)
-              .map(([muscle, percentage]) => (
-                <View key={muscle} style={styles.muscleItem}>
-                  <View style={styles.muscleInfo}>
-                    <Text variant="bodyMedium" color="neutral.gray800" style={{ textTransform: 'capitalize' }}>
-                      {getMuscleLabel(muscle)}
-                    </Text>
-                    <Text variant="bodyMedium" color="primary.main" bold>
-                      {percentage}%
-                    </Text>
-                  </View>
-                  <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${percentage}%` }]} />
-                  </View>
-                </View>
-              ))}
-          </View>
-        </Card>
-
-        {/* Consistencia */}
-        <Card shadow="lg" style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="flame" size={24} color={colors.warning.main} />
-            <Text variant="h3" color="neutral.gray800">
-              Consistencia
-            </Text>
-          </View>
-          
-          <View style={styles.consistencyGrid}>
-            <View style={styles.consistencyItem}>
-              <Text variant="h1" color="success.main" style={{ fontSize: 48 }}>
-                {consistency.totalCompleted}
-              </Text>
-              <Text variant="bodySmall" color="neutral.gray500">
-                sesiones completadas
-              </Text>
-            </View>
-            
-            <View style={styles.consistencyItem}>
-              <Text variant="h1" color="neutral.gray800" style={{ fontSize: 48 }}>
-                {consistency.completionRate}%
-              </Text>
-              <Text variant="bodySmall" color="neutral.gray500">
-                tasa de finalización
-              </Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Personal Records */}
-        {personalRecords.length > 0 && (
-          <Card shadow="lg" style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Icon name="trophy" size={24} color={colors.warning.main} />
-              <Text variant="h3" color="neutral.gray800">
-                Records Personales
-              </Text>
-            </View>
-            
-            <View style={styles.prList}>
-              {personalRecords.map((pr, index) => (
-                <View key={index} style={styles.prItem}>
-                  <View style={styles.prRank}>
-                    <Text variant="h3" color="warning.main">
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <View style={styles.prInfo}>
-                    <Text variant="bodyMedium" color="neutral.gray800" bold>
-                      {pr.exercise}
-                    </Text>
-                    <Text variant="caption" color="neutral.gray500">
-                      {new Date(pr.date).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.prStats}>
-                    <Text variant="h3" color="primary.main">
-                      {pr.weight}kg
-                    </Text>
-                    <Text variant="caption" color="neutral.gray500">
-                      × {pr.reps} reps
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </Card>
-        )}
-      </ScrollView>
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        renderTabBar={renderTabBar}
+        onIndexChange={setIndex}
+        initialLayout={{ width: layout.width }}
+      />
     </View>
   );
-}
-
-// Helper para traducir nombres de músculos
-function getMuscleLabel(muscle) {
-  const labels = {
-    chest: 'Pecho',
-    back: 'Espalda',
-    legs: 'Piernas',
-    shoulders: 'Hombros',
-    arms: 'Brazos',
-    core: 'Core',
-    other: 'Otros'
-  };
-  return labels[muscle] || muscle;
 }
 
 const styles = StyleSheet.create({
@@ -255,116 +144,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    backgroundColor: colors.neutral.gray100,
   },
-  
-  scrollView: {
-    flex: 1,
+
+  // Tab Bar
+  tabBar: {
+    backgroundColor: colors.neutral.white,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral.gray200,
   },
-  scrollContent: {
-    padding: spacing.base,
-    paddingBottom: spacing.xl,
-  },
-  
-  // Header
-  headerSection: {
-    marginBottom: spacing.lg,
-  },
-  
-  // Cards
-  card: {
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  
-  // Volumen
-  volumeGrid: {
-    gap: spacing.lg,
-  },
-  volumeItem: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    backgroundColor: colors.primary.main + '10',
-    borderRadius: radius.lg,
-  },
-  volumeStats: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  volumeStat: {
-    flex: 1,
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: radius.lg,
-  },
-  
-  // Músculos
-  muscleList: {
-    gap: spacing.md,
-  },
-  muscleItem: {
-    gap: spacing.xs,
-  },
-  muscleInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: colors.neutral.gray200,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
+  tabIndicator: {
     backgroundColor: colors.primary.main,
-    borderRadius: radius.full,
+    height: 3,
   },
-  
-  // Consistencia
-  consistencyGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  consistencyItem: {
-    flex: 1,
-    alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: radius.lg,
-  },
-  
-  // Personal Records
-  prList: {
-    gap: spacing.sm,
-  },
-  prItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: radius.lg,
-  },
-  prRank: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.warning.main + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  prInfo: {
-    flex: 1,
-  },
-  prStats: {
-    alignItems: 'flex-end',
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'none',
   },
 });
