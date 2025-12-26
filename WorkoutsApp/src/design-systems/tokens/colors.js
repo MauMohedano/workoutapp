@@ -20,7 +20,11 @@ export const colors = {
     electric: '#00E5FF',  // Cyan - Energía
     lime: '#CDFF00',      // Lima - Fresco
   },
-
+  error: {
+    main: '#EF4444',
+    light: '#FCA5A5',
+    dark: '#DC2626',
+  },
   // ===== COLORES FUNCIONALES =====
   success: {
     main: '#00E676',      // Verde neón

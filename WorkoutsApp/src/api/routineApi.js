@@ -24,8 +24,14 @@ export const getRoutines = async (deviceId) => {
  * Obtener una rutina específica por ID
  * @param {string} id - ID de la rutina
  */
-export const getRoutineById = async (id) => {
-  const response = await fetch(`${API_URL}/routines/${id}`);
+export const getRoutineById = async (id, deviceId) => {
+  const url = deviceId 
+    ? `${API_URL}/routines/${id}?deviceId=${deviceId}`
+    : `${API_URL}/routines/${id}`;
+  
+ 
+    
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch routine');
   }

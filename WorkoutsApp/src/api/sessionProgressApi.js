@@ -8,8 +8,6 @@ import { API_URL } from '../config/api';
  */
 export const getSessionProgress = async (deviceId, routineId) => {
   try {
-    console.log('📊 Fetching session progress for:', deviceId, routineId);
-    
     const response = await fetch(`${API_URL}/session-progress/${deviceId}/${routineId}`, {
       method: 'GET',
       headers: {
@@ -22,11 +20,6 @@ export const getSessionProgress = async (deviceId, routineId) => {
     }
     
     const data = await response.json();
-    console.log('✅ Session progress loaded:', {
-      currentSession: data.currentSession,
-      completed: data.completedSessions.length,
-      skipped: data.skippedSessions.length
-    });
     
     return data;
   } catch (error) {
@@ -36,14 +29,18 @@ export const getSessionProgress = async (deviceId, routineId) => {
 };
 
 /**
- * Completar una sesión
+ * ✨ Completar una sesión (ACTUALIZADO con duration)
  * @param {string} deviceId - ID del dispositivo
  * @param {string} routineId - ID de la rutina
  * @param {number} sessionNumber - Número de sesión a completar
+ * @param {number|null} duration - Duración en segundos (opcional)
  */
-export const completeSession = async (deviceId, routineId, sessionNumber) => {
+export const completeSession = async (deviceId, routineId, sessionNumber, duration = null) => {
   try {
-    console.log('✅ Completing session:', sessionNumber);
+    console.log('📤 API: Completando sesión con duration:', { 
+      sessionNumber, 
+      duration: duration ? `${duration}s (${Math.floor(duration / 60)}m)` : 'N/A' 
+    });
     
     const response = await fetch(`${API_URL}/session-progress/complete`, {
       method: 'POST',
@@ -53,7 +50,8 @@ export const completeSession = async (deviceId, routineId, sessionNumber) => {
       body: JSON.stringify({
         deviceId,
         routineId,
-        sessionNumber: Number(sessionNumber)
+        sessionNumber: Number(sessionNumber),
+        duration: duration ? Number(duration) : null  // ✨ NUEVO
       }),
     });
     
@@ -63,7 +61,8 @@ export const completeSession = async (deviceId, routineId, sessionNumber) => {
     }
     
     const data = await response.json();
-    console.log('✅ Session completed. New current session:', data.currentSession);
+    
+    console.log('✅ Sesión completada en servidor');
     
     return data;
   } catch (error) {
@@ -80,8 +79,6 @@ export const completeSession = async (deviceId, routineId, sessionNumber) => {
  */
 export const skipSession = async (deviceId, routineId, sessionNumber) => {
   try {
-    console.log('⏭️ Skipping session:', sessionNumber);
-    
     const response = await fetch(`${API_URL}/session-progress/skip`, {
       method: 'POST',
       headers: {
@@ -100,7 +97,6 @@ export const skipSession = async (deviceId, routineId, sessionNumber) => {
     }
     
     const data = await response.json();
-    console.log('⏭️ Session skipped. New current session:', data.currentSession);
     
     return data;
   } catch (error) {
@@ -117,8 +113,6 @@ export const skipSession = async (deviceId, routineId, sessionNumber) => {
  */
 export const syncSessionProgress = async (deviceId, routineId, progressData) => {
   try {
-    console.log('🔄 Syncing session progress');
-    
     const response = await fetch(`${API_URL}/session-progress/sync`, {
       method: 'PUT',
       headers: {
@@ -136,7 +130,6 @@ export const syncSessionProgress = async (deviceId, routineId, progressData) => 
     }
     
     const data = await response.json();
-    console.log('✅ Session progress synced');
     
     return data;
   } catch (error) {

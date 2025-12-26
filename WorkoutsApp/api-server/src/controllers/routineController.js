@@ -51,12 +51,44 @@ const getRoutines = async (req, res) => {
 const getRoutineById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { deviceId } = req.query;  // ← AGREGAR: Obtener deviceId del query
+    
+     // 🔍 DEBUG - AGREGAR ESTO
+    console.log('🔍 GET ROUTINE BY ID:', {
+      routineId: id,
+      deviceId: deviceId,
+      query: req.query,
+      hasDeviceId: !!deviceId
+    });
+    
     const routine = await Routine.findById(id);
 
     if (!routine) {
       return res.status(404).json({ error: 'Rutina no encontrada' });
     }
 
+    // ← AGREGAR: Si hay deviceId, buscar y agregar el progreso
+    if (deviceId) {
+      const progress = await SessionProgress.findOne({
+        deviceId,
+        routineId: id
+      });
+
+      return res.json({
+        ...routine.toObject(),
+        progress: progress ? {
+          currentSession: progress.currentSession,
+          completedSessions: progress.completedSessions,
+          skippedSessions: progress.skippedSessions
+        } : {
+          currentSession: 1,
+          completedSessions: [],
+          skippedSessions: []
+        }
+      });
+    }
+
+    // Si no hay deviceId, devolver rutina sin progreso
     res.json(routine);
   } catch (error) {
     console.error('GET ROUTINE ERROR:', error);
@@ -125,7 +157,7 @@ const createRoutine = async (req, res) => {
     const saved = await newRoutine.save();
 
     // ✅ Log informativo
-    console.log(`✅ Rutina creada: ${saved.name} - ${saved.days.length} días - ${saved.days.reduce((total, day) => total + day.exercises.length, 0)} ejercicios`);
+    
 
     res.status(201).json(saved);
   } catch (error) {

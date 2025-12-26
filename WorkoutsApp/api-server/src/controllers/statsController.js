@@ -11,7 +11,7 @@ const getUserStats = async (req, res) => {
     const { deviceId } = req.params;
     const { period = 'all' } = req.query; // 'week', 'month', 'year', 'all'
     
-    console.log('📊 Calculando estadísticas para:', deviceId, '| Período:', period);
+    
     
     // Calcular fecha de inicio según período
     const startDate = getStartDate(period);
@@ -25,7 +25,7 @@ const getUserStats = async (req, res) => {
       ...dateFilter
     }).sort({ createdAt: -1 });
     
-    console.log('📦 Total sets encontrados:', allSets.length);
+    
     
     if (allSets.length === 0) {
       return res.json(getEmptyStats());
@@ -60,7 +60,7 @@ const getUserStats = async (req, res) => {
       lastWorkoutDate: allSets[0]?.createdAt || null
     };
     
-    console.log('✅ Estadísticas calculadas');
+    
     
     res.json(stats);
   } catch (error) {

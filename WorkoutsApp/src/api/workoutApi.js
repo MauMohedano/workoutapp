@@ -105,11 +105,28 @@ export const deleteSet = async (id) => {
   return response.json();
 };
 
-/**
- * Obtener último entrenamiento de un ejercicio
- * @param {string} exerciseName - Nombre del ejercicio
- * @param {number} currentSession - Sesión actual (para excluirla)
- */
+export const getSetsBySession = async (deviceId, routineId, sessionNumber) => {
+  try {
+    const params = new URLSearchParams({
+      deviceId,
+      routineId,
+      sessionNumber: sessionNumber.toString()
+    });
+    
+    const response = await fetch(`${API_URL}/exercises/session?${params}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch sets by session');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('❌ Error fetching sets by session:', error);
+    return []; // Retornar array vacío si falla
+  }
+};
+
+
 export const getLastWorkout = async (exerciseName, currentSession) => {
   const params = new URLSearchParams({
     exerciseName,

@@ -13,6 +13,7 @@ import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import StatsHighlight from '../components/stats/StatsHighlight';
 import { useLatestMeasurement } from '../hooks/useMeasurements';
 import { getCurrentDayName, getUpcomingSessions, getCompletedSessionsCount, getRemainingSessionsCount } from '@/utils/routineHelpers';
+import { getDayForSession } from '@/utils/sessionHelpers';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -46,6 +47,9 @@ export default function HomeScreen() {
     progress: sessionProgress,
     isLoading: isLoadingProgress,
   } = useSessionProgress(activeRoutine?._id);
+
+  // Obtener el día actual para la sesión activa
+  const currentDay = activeRoutine ? getDayForSession(currentSession, activeRoutine.days) : null;
 
   const { data: statsData, isLoading: isLoadingStats } = useWorkoutStats(deviceId);
 
@@ -169,91 +173,108 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                <Pressable onPress={() => router.push(`/routines/${activeRoutine._id}`)}>
-                  <View style={styles.activeRoutineCard}>
-                    {/* Header */}
-                    <View style={styles.activeRoutineHeader}>
-                      <Icon name="dumbbell" size={28} color={colors.neutral.white} />
-                      <View style={styles.activeRoutineInfo}>
-                        <Text variant="h2" style={styles.activeRoutineTitle}>
-                          {activeRoutine.name}
-                        </Text>
-                        <Text variant="bodySmall" style={styles.activeRoutineMeta}>
-                          Sesión {currentSession} de {activeRoutine.totalSessions}
-                        </Text>
-                      </View>
-                    </View>
 
-                    {/* Progreso */}
-                    <View style={styles.activeRoutineProgress}>
-                      <View style={styles.progressBarContainer}>
-                        <View
-                          style={[
-                            styles.progressBarFill,
-                            { width: `${Math.round((currentSession / activeRoutine.totalSessions) * 100)}%` }
-                          ]}
-                        />
-                      </View>
-                      <Text variant="caption" style={styles.progressText}>
-                        {completedSessions?.length || 0} completadas • {activeRoutine.totalSessions - currentSession + 1} restantes
+                <View style={styles.activeRoutineCard}>
+                  {/* Header */}
+                  <View style={styles.activeRoutineHeader}>
+                    <Icon name="dumbbell" size={28} color={colors.neutral.white} />
+                    <View style={styles.activeRoutineInfo}>
+                      <Text variant="h2" style={styles.activeRoutineTitle}>
+                        {activeRoutine.name}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.activeRoutineMeta}>
+                        Sesión {currentSession} de {activeRoutine.totalSessions}
                       </Text>
                     </View>
+                  </View>
 
-                    {/* Botón */}
-                    <Button
-                      variant="secondary"
-                      size="lg"
-                      fullWidth
-                      icon="play-circle"
-                      onPress={() => router.push(`/routines/${activeRoutine._id}`)}
-                    >
-                      Ir a sesión: <Text style={{ fontWeight: 'bold', color: colors.primary.main }}>{getCurrentDayName(activeRoutine)}</Text>
-                    </Button>
+                  {/* Progreso */}
+                  <View style={styles.activeRoutineProgress}>
+                    <View style={styles.progressBarContainer}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          { width: `${Math.round((currentSession / activeRoutine.totalSessions) * 100)}%` }
+                        ]}
+                      />
+                    </View>
+                    <Text variant="caption" style={styles.progressText}>
+                      {completedSessions?.length || 0} completadas • {activeRoutine.totalSessions - currentSession + 1} restantes
+                    </Text>
+                  </View>
+
+                  {/* Botón */}
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    fullWidth
+                    icon="play-circle"
+                    onPress={() => {
+                      if (!currentDay) {
+                        console.error('❌ No se pudo obtener el día actual');
+                        return;
+                      }
+
+                      router.push({
+                        pathname: '/workout',
+                        params: {
+                          routineId: activeRoutine._id,
+                          sessionNumber: currentSession,
+                          dayId: currentDay._id,
+                          dayName: currentDay.name,
+                          totalExercises: currentDay.exercises.length,
+                          exerciseIndex: 0,
+                          isReadOnly: 'false'
+                        }
+                      });
+                    }}
+                  >
+                    Ir a sesión: <Text style={{ fontWeight: 'bold', color: colors.primary.main }}>{getCurrentDayName(activeRoutine)}</Text>
+                  </Button>
 
 
-                    {/* Próximas Sesiones */}
-                    {getUpcomingSessions(activeRoutine).length > 0 && (
-                      <View style={styles.upcomingSessions}>
-                        <View style={styles.upcomingDivider} />
-                        <Text variant="caption" style={styles.upcomingTitle}>
-                          Próximas:
-                        </Text>
-                        {getUpcomingSessions(activeRoutine).map((session, index) => (
-                          <Pressable
-                            key={index}
-                            style={styles.upcomingSessionCard}
-                            onPress={() => router.push(`/routines/session-preview?routineId=${activeRoutine._id}&sessionNumber=${session.sessionNumber}&deviceId=${deviceId}`)}
-                          >
-                            <View style={styles.upcomingCardContent}>
-                              <View style={styles.upcomingCardHeader}>
-                                <Icon name="dumbbell" size={18} color={`${colors.neutral.white}90`} />
-                                <Text variant="bodySmall" style={styles.upcomingCardTitle}>
-                                  Sesión {session.sessionNumber} · {session.dayName}
+                  {/* Próximas Sesiones */}
+                  {getUpcomingSessions(activeRoutine).length > 0 && (
+                    <View style={styles.upcomingSessions}>
+                      <View style={styles.upcomingDivider} />
+                      <Text variant="caption" style={styles.upcomingTitle}>
+                        Próximas:
+                      </Text>
+                      {getUpcomingSessions(activeRoutine).map((session, index) => (
+                        <Pressable
+                          key={index}
+                          style={styles.upcomingSessionCard}
+                          onPress={() => router.push(`/routines/${activeRoutine._id}/preview?sessionNumber=${session.sessionNumber}`)}                          >
+                          <View style={styles.upcomingCardContent}>
+                            <View style={styles.upcomingCardHeader}>
+                              <Icon name="dumbbell" size={18} color={`${colors.neutral.white}90`} />
+                              <Text variant="bodySmall" style={styles.upcomingCardTitle}>
+                                Sesión {session.sessionNumber} · {session.dayName}
+                              </Text>
+                              <Icon name="chevron-right" size={18} color={`${colors.neutral.white}60`} style={{ marginLeft: 'auto' }} />
+                            </View>
+                            <View style={styles.upcomingCardDetails}>
+                              <View style={styles.upcomingCardDetailItem}>
+                                <Icon name="list" size={14} color={`${colors.neutral.white}70`} />
+                                <Text variant="caption" style={styles.upcomingCardDetailText}>
+                                  {session.exerciseCount} ejercicios
                                 </Text>
-                                <Icon name="chevron-right" size={18} color={`${colors.neutral.white}60`} style={{ marginLeft: 'auto' }} />
                               </View>
-                              <View style={styles.upcomingCardDetails}>
-                                <View style={styles.upcomingCardDetailItem}>
-                                  <Icon name="list" size={14} color={`${colors.neutral.white}70`} />
-                                  <Text variant="caption" style={styles.upcomingCardDetailText}>
-                                    {session.exerciseCount} ejercicios
-                                  </Text>
-                                </View>
-                                <View style={styles.upcomingCardDetailItem}>
-                                  <Icon name="time" size={14} color={`${colors.neutral.white}70`} />
-                                  <Text variant="caption" style={styles.upcomingCardDetailText}>
-                                    ~{session.exerciseCount * 8} min
-                                  </Text>
-                                </View>
+                              <View style={styles.upcomingCardDetailItem}>
+                                <Icon name="time" size={14} color={`${colors.neutral.white}70`} />
+                                <Text variant="caption" style={styles.upcomingCardDetailText}>
+                                  ~{session.exerciseCount * 8} min
+                                </Text>
                               </View>
                             </View>
-                          </Pressable>
-                        ))}
-                      </View>
-                    )}
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
 
-                  </View>
-                </Pressable>
+                </View>
+
               </>
             ) : (
               /* Si NO hay rutina activa, mostrar placeholder */
@@ -276,9 +297,9 @@ export default function HomeScreen() {
 
             {/* Link a todas las rutinas - SIEMPRE visible si hay rutinas */}
             <Pressable
-  style={styles.seeAllButton}
-  onPress={() => router.push(`/routines?deviceId=${deviceId}`)}
->
+              style={styles.seeAllButton}
+              onPress={() => router.push(`/routines?deviceId=${deviceId}`)}
+            >
               <Text variant="bodyMedium" color="primary.main" style={{ fontWeight: '600' }}>
                 Ver todas mis rutinas
               </Text>
@@ -500,11 +521,11 @@ const styles = StyleSheet.create({
   },
 
   seeAllButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: spacing.xs,
-  paddingVertical: spacing.sm,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
 
   // ===== SECCIÓN 1: HEADER USUARIO =====
   headerSection: {

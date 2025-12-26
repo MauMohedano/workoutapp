@@ -9,7 +9,7 @@
  */
 
 
-const LOCAL_IP = '192.168.1.68';  // ← Mi IP está cambiando constantemente
+const LOCAL_IP = '192.168.1.83';  // ← Mi IP está cambiando constantemente
 
 // Puerto del backend 
 const PORT = 3003;
@@ -18,7 +18,7 @@ const PORT = 3003;
 export const API_URL = `http://${LOCAL_IP}:${PORT}/api`;
 
 // Log para debug (ver en consola qué IP está usando)
-console.log('🌐 API configurada en:', API_URL);
+
 
 // Exportar también la IP y puerto por si se necesitan individualmente
 export { LOCAL_IP, PORT };

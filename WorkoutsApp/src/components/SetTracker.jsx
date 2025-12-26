@@ -39,7 +39,7 @@ const SetTracker = ({
     mutationFn: deleteSet,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sets'] });
-      console.log('✅ Set deleted successfully!');
+      
     },
     onError: (error) => {
       console.error('❌ Error deleting set:', error);

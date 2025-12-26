@@ -17,7 +17,7 @@ export const saveProgressToCache = async (deviceId, routineId, progress) => {
     };
     
     await AsyncStorage.setItem(key, JSON.stringify(data));
-    console.log('💾 Progreso guardado en cache');
+    
     
     return true;
   } catch (error) {
@@ -38,15 +38,12 @@ export const getProgressFromCache = async (deviceId, routineId) => {
     const data = await AsyncStorage.getItem(key);
     
     if (!data) {
-      console.log('📭 No hay progreso en cache');
+      
       return null;
     }
     
     const progress = JSON.parse(data);
-    console.log('📦 Progreso cargado desde cache:', {
-      currentSession: progress.currentSession,
-      lastCachedAt: progress.lastCachedAt
-    });
+    
     
     return progress;
   } catch (error) {
@@ -64,7 +61,7 @@ export const clearProgressCache = async (deviceId, routineId) => {
   try {
     const key = `${CACHE_KEY_PREFIX}${deviceId}_${routineId}`;
     await AsyncStorage.removeItem(key);
-    console.log('🗑️ Cache limpiado');
+    
     return true;
   } catch (error) {
     console.error('❌ Error limpiando cache:', error);

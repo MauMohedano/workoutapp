@@ -16,7 +16,7 @@ export const searchExercises = async (params = {}) => {
     if (equipment) queryParams.append('equipment', equipment);
     queryParams.append('limit', limit);
     
-    console.log('📡 Buscando ejercicios:', { q, muscle, equipment });
+    
     
     const response = await fetch(`${API_URL}/catalog/search?${queryParams.toString()}`);
     
@@ -25,7 +25,7 @@ export const searchExercises = async (params = {}) => {
     }
     
     const data = await response.json();
-    console.log('✅ Ejercicios encontrados:', data.count);
+    
     
     return data;
   } catch (error) {

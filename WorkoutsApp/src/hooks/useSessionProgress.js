@@ -24,14 +24,12 @@ export const useSessionProgress = (routineId) => {
     const initialize = async () => {
       const id = await getDeviceId();
       setDeviceId(id);
-      console.log('📱 Device ID:', id);
       
       // Cargar progreso del cache
       if (id && routineId) {
         const cached = await getProgressFromCache(id, routineId);
         if (cached) {
           setCachedProgress(cached);
-          console.log('📦 Usando datos del cache mientras carga del servidor');
         }
       }
       
@@ -50,7 +48,6 @@ export const useSessionProgress = (routineId) => {
   } = useQuery({
     queryKey: ['sessionProgress', deviceId, routineId],
     queryFn: async () => {
-      console.log('☁️ Cargando progreso del servidor...');
       const data = await getSessionProgress(deviceId, routineId);
       
       // Mergear con cache si existe
@@ -60,12 +57,11 @@ export const useSessionProgress = (routineId) => {
         
         // Si hay diferencias, sincronizar con servidor
         if (JSON.stringify(merged) !== JSON.stringify(data)) {
-          console.log('🔄 Sincronizando diferencias con servidor');
           try {
             finalData = await syncSessionProgress(deviceId, routineId, merged);
           } catch (error) {
             console.error('❌ Error sincronizando:', error);
-            finalData = merged; // Usar merged aunque falle el sync
+            finalData = merged;
           }
         }
       }
@@ -82,29 +78,45 @@ export const useSessionProgress = (routineId) => {
   // Usar datos del cache si está disponible, sino del servidor
   const progress = serverProgress || cachedProgress;
 
-  // Mutation para completar sesión
+  // ✨ Mutation para completar sesión (ACTUALIZADO con duration)
   const completeMutation = useMutation({
-    mutationFn: async ({ sessionNumber }) => {
-      console.log('✅ Completando sesión:', sessionNumber);
+    mutationFn: async ({ sessionNumber, duration }) => {
+      console.log('🎯 Completando sesión:', { sessionNumber, duration });
+      
+      // Crear objeto de sesión completada
+      const completedSession = {
+        sessionNumber,
+        duration: duration || null,
+        completedAt: new Date().toISOString()
+      };
       
       // Guardar primero en cache (optimistic update)
       if (progress) {
         const optimisticProgress = {
           ...progress,
           currentSession: sessionNumber + 1,
-          completedSessions: [...(progress.completedSessions || []), sessionNumber].sort((a, b) => a - b),
+          completedSessions: [
+            ...(progress.completedSessions || []).filter(s => {
+              const num = typeof s === 'number' ? s : s.sessionNumber;
+              return num !== sessionNumber;
+            }),
+            completedSession
+          ].sort((a, b) => {
+            const aNum = typeof a === 'number' ? a : a.sessionNumber;
+            const bNum = typeof b === 'number' ? b : b.sessionNumber;
+            return aNum - bNum;
+          }),
           skippedSessions: (progress.skippedSessions || []).filter(s => s !== sessionNumber),
         };
         
         await saveProgressToCache(deviceId, routineId, optimisticProgress);
-        console.log('💾 Progreso guardado en cache (optimistic)');
         
         // Actualizar cache de React Query inmediatamente
         queryClient.setQueryData(['sessionProgress', deviceId, routineId], optimisticProgress);
       }
       
-      // Luego sincronizar con servidor
-      const serverData = await completeSession(deviceId, routineId, sessionNumber);
+      // Luego sincronizar con servidor (pasando duration)
+      const serverData = await completeSession(deviceId, routineId, sessionNumber, duration);
       
       // Guardar respuesta del servidor en cache
       await saveProgressToCache(deviceId, routineId, serverData);
@@ -113,7 +125,7 @@ export const useSessionProgress = (routineId) => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessionProgress'] });
-      console.log('✅ Session completed successfully');
+      console.log('✅ Sesión completada y sincronizada');
     },
     onError: (error) => {
       console.error('❌ Error completing session:', error.message);
@@ -125,19 +137,19 @@ export const useSessionProgress = (routineId) => {
   // Mutation para saltar sesión
   const skipMutation = useMutation({
     mutationFn: async ({ sessionNumber }) => {
-      console.log('⏭️ Saltando sesión:', sessionNumber);
-      
       // Guardar primero en cache (optimistic update)
       if (progress) {
         const optimisticProgress = {
           ...progress,
           currentSession: sessionNumber + 1,
-          completedSessions: (progress.completedSessions || []).filter(s => s !== sessionNumber),
+          completedSessions: (progress.completedSessions || []).filter(s => {
+            const num = typeof s === 'number' ? s : s.sessionNumber;
+            return num !== sessionNumber;
+          }),
           skippedSessions: [...(progress.skippedSessions || []), sessionNumber].sort((a, b) => a - b),
         };
         
         await saveProgressToCache(deviceId, routineId, optimisticProgress);
-        console.log('💾 Progreso guardado en cache (optimistic)');
         
         // Actualizar cache de React Query inmediatamente
         queryClient.setQueryData(['sessionProgress', deviceId, routineId], optimisticProgress);
@@ -153,7 +165,6 @@ export const useSessionProgress = (routineId) => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessionProgress'] });
-      console.log('⏭️ Session skipped successfully');
     },
     onError: (error) => {
       console.error('❌ Error skipping session:', error.message);
@@ -162,15 +173,16 @@ export const useSessionProgress = (routineId) => {
     }
   });
 
-  // Función helper para completar la sesión actual
-  const completeCurrentSession = async () => {
+  // ✨ Función helper para completar la sesión actual (ACTUALIZADO con duration)
+  const completeCurrentSession = async (duration = null) => {
     if (!progress?.currentSession) {
       console.error('No current session to complete');
       return;
     }
     
     return completeMutation.mutateAsync({ 
-      sessionNumber: progress.currentSession 
+      sessionNumber: progress.currentSession,
+      duration  // ✨ NUEVO: Pasar duration
     });
   };
 
@@ -188,7 +200,11 @@ export const useSessionProgress = (routineId) => {
 
   // Verificar si una sesión está completada
   const isSessionCompleted = (sessionNumber) => {
-    return progress?.completedSessions?.includes(sessionNumber) || false;
+    if (!progress?.completedSessions) return false;
+    return progress.completedSessions.some(s => {
+      const num = typeof s === 'number' ? s : s.sessionNumber;
+      return num === sessionNumber;
+    });
   };
 
   // Verificar si una sesión está saltada
@@ -212,7 +228,7 @@ export const useSessionProgress = (routineId) => {
     deviceId,
     
     // Estados
-    isLoading: isLoadingCache || (isLoadingServer && !cachedProgress), // Solo loading si no hay cache
+    isLoading: isLoadingCache || (isLoadingServer && !cachedProgress),
     error,
     isCompleting: completeMutation.isPending,
     isSkipping: skipMutation.isPending,

@@ -1,7 +1,7 @@
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { createSet, getSets } from "../api/workoutApi";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createSet } from "../api/workoutApi";
 import ResetTimer from "./ResetTimer";
 
 // Design System
@@ -9,14 +9,16 @@ import { colors, spacing, radius, shadows, Icon } from '@/design-systems/tokens'
 import { Button, Text } from '@/design-systems/components';
 
 const NewSetInput = ({ 
- exerciseName, 
+  exerciseName, 
   routineExerciseId, 
   sessionNumber,
   deviceId,        
   routineId,      
   restTime = 90,
   targetSets = 4,
-  targetReps = 10 
+  targetReps = 10,
+  variant = 'default',  // 'default' | 'compact'
+  onSetAdded  // Callback opcional cuando se agrega un set
 }) => {
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
@@ -24,22 +26,29 @@ const NewSetInput = ({
 
   const queryClient = useQueryClient();
 
- 
-
-
-  const mutation = useMutation({
+ const mutation = useMutation({
     mutationFn: createSet,
     onSuccess: () => {
+      // ✅ Invalidar queries específicas
       queryClient.invalidateQueries({ queryKey: ['sets'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionSets', deviceId, routineId, sessionNumber] }); // ← AGREGAR ESTO
+      queryClient.invalidateQueries({ queryKey: ['allSets', deviceId, routineId] }); // ← AGREGAR ESTO
 
       // Limpiar inputs
       setReps('');
       setWeight('');
 
-      // Mostrar timer automáticamente
-      setShowTimer(true);
+      // Mostrar timer automáticamente (solo en default)
+      if (variant === 'default') {
+        setShowTimer(true);
+      }
 
-      console.log('✅ Set added successfully!');
+      // Callback opcional
+      if (onSetAdded) {
+        onSetAdded();
+      }
+
+      
     },
     onError: (error) => {
       console.error('❌ Error adding set:', error.message);
@@ -48,34 +57,34 @@ const NewSetInput = ({
 
   const addSet = () => {
     if (!reps || !weight) {
-      console.log('Please enter reps and weight');
+      
       return;
     }
 
     if (!exerciseName) {
-      console.log('Exercise name is missing');
+      
       return;
     }
 
-   mutation.mutate({
-  exercise: exerciseName,
-  reps: parseInt(reps),
-  weight: parseInt(weight),
-  sessionNumber: sessionNumber ? parseInt(sessionNumber) : undefined,
-  routineExerciseId: routineExerciseId || undefined,
-  deviceId,      
-  routineId      
-});
+    mutation.mutate({
+      exercise: exerciseName,
+      reps: parseInt(reps),
+      weight: parseFloat(weight),
+      sessionNumber: sessionNumber ? parseInt(sessionNumber) : undefined,
+      routineExerciseId: routineExerciseId || undefined,
+      deviceId,      
+      routineId      
+    });
   };
 
   const handleTimerComplete = () => {
     setShowTimer(false);
-    console.log('⏱️ Rest complete!');
+    
   };
 
-  // Funciones de incremento/decremento
+  // Funciones de incremento/decremento (solo para default)
   const adjustWeight = (delta) => {
-    const currentWeight = parseInt(weight) || 0;
+    const currentWeight = parseFloat(weight) || 0;
     const newWeight = Math.max(0, currentWeight + delta);
     setWeight(newWeight.toString());
   };
@@ -86,7 +95,65 @@ const NewSetInput = ({
     setReps(newReps.toString());
   };
 
+  // ===== COMPACT VARIANT =====
+  if (variant === 'compact') {
+    return (
+      <>
+        {showTimer && (
+          <ResetTimer
+            restTime={restTime}
+            onComplete={handleTimerComplete}
+          />
+        )}
 
+        <View style={styles.compactContainer}>
+          {/* Weight Input */}
+          <View style={styles.compactInputGroup}>
+            <TextInput
+              style={styles.compactInput}
+              placeholder="Peso"
+              keyboardType="decimal-pad"
+              value={weight}
+              onChangeText={setWeight}
+              placeholderTextColor={colors.neutral.gray400}
+            />
+            <Text variant="caption" color="neutral.gray600" style={styles.compactUnit}>
+              kg
+            </Text>
+          </View>
+
+          {/* Reps Input */}
+          <View style={styles.compactInputGroup}>
+            <TextInput
+              style={styles.compactInput}
+              placeholder="Reps"
+              keyboardType="number-pad"
+              value={reps}
+              onChangeText={setReps}
+              placeholderTextColor={colors.neutral.gray400}
+            />
+            <Text variant="caption" color="neutral.gray600" style={styles.compactUnit}>
+              reps
+            </Text>
+          </View>
+
+          {/* Button */}
+          <Button
+            variant="primary"
+            size="md"
+            onPress={addSet}
+            disabled={mutation.isPending || !weight || !reps}
+            loading={mutation.isPending}
+            style={styles.compactButton}
+          >
+            {mutation.isPending ? "..." : "GUARDAR"}
+          </Button>
+        </View>
+      </>
+    );
+  }
+
+  // ===== DEFAULT VARIANT =====
   return (
     <>
       {/* Timer de descanso */}
@@ -97,7 +164,7 @@ const NewSetInput = ({
         />
       )}
 
-          {/* Input principal */}
+      {/* Input principal */}
       <View style={styles.container}>
         <Text variant="h3" color="neutral.gray800" style={styles.title}>
           Agregar Set
@@ -121,9 +188,9 @@ const NewSetInput = ({
               onChangeText={setWeight}
               placeholder="0"
               style={styles.inputLarge}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholderTextColor={colors.neutral.gray400}
-              maxLength={4}
+              maxLength={5}
             />
 
             <Pressable
@@ -153,7 +220,7 @@ const NewSetInput = ({
               onChangeText={setReps}
               placeholder={targetReps?.toString() || "0"}
               style={styles.inputLarge}
-              keyboardType="numeric"
+              keyboardType="number-pad"
               placeholderTextColor={colors.neutral.gray400}
               maxLength={3}
             />
@@ -172,7 +239,7 @@ const NewSetInput = ({
           variant="primary"
           size="lg"
           fullWidth
-          icon="success"
+          icon="checkmark-circle"
           onPress={addSet}
           disabled={mutation.isPending || !weight || !reps}
           loading={mutation.isPending}
@@ -196,7 +263,7 @@ const NewSetInput = ({
 };
 
 const styles = StyleSheet.create({
-  // Main container
+  // ===== DEFAULT VARIANT STYLES =====
   container: {
     backgroundColor: colors.neutral.white,
     padding: spacing.lg,
@@ -209,8 +276,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
-
-  // Input sections
   inputSection: {
     marginBottom: spacing.lg,
   },
@@ -244,20 +309,57 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.neutral.gray200,
   },
-
-  // Add button
   addButton: {
     marginTop: spacing.sm,
     ...shadows.md,
   },
-
-  // Target hint
   targetHint: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs - 2,
     marginTop: spacing.md,
+  },
+
+  // ===== COMPACT VARIANT STYLES =====
+  compactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.neutral.white,
+    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.neutral.gray200,
+    marginHorizontal: spacing.sm + 2,
+    marginBottom: spacing.md,
+  },
+  compactInputGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.gray50,
+    borderRadius: radius.base,
+    borderWidth: 1,
+    borderColor: colors.neutral.gray300,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  compactInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.neutral.gray800,
+    paddingVertical: spacing.sm,
+    textAlign: 'center',
+  },
+  compactUnit: {
+    marginLeft: spacing.xs - 2,
+  },
+  compactButton: {
+    flex: 1.2,
+    minWidth: 100,
   },
 });
 

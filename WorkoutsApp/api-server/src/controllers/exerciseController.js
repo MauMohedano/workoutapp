@@ -13,7 +13,7 @@ const getExercises = async (req, res) => {
 // Crear un ejercicio
 const createExercise = async (req, res) => {
   try {
-    console.log('📦 BODY recibido:', req.body);
+    
 
     const { exercise, reps, weight, sessionNumber, routineExerciseId, deviceId, routineId } = req.body;
 
@@ -45,7 +45,7 @@ const createExercise = async (req, res) => {
 
     const savedExercise = await newExercise.save();
 
-    console.log('✅ Set guardado con sessionNumber:', savedExercise.sessionNumber);
+    
 
     res.json({
       _id: savedExercise._id,
@@ -85,12 +85,12 @@ const updateExercise = async (req, res) => {
   }
 };
 
-// ✅ MEJORADO: Obtener último entrenamiento de un ejercicio específico
+//  Obtener último entrenamiento de un ejercicio específico
 const getLastWorkout = async (req, res) => {
   try {
     const { exerciseName, currentSession } = req.query;
 
-    console.log('🔍 Buscando historial de:', exerciseName, '| Sesión actual:', currentSession);
+    
 
     if (!exerciseName) {
       return res.status(400).json({ error: 'exerciseName es requerido' });
@@ -107,10 +107,10 @@ const getLastWorkout = async (req, res) => {
       .limit(20)  // Últimos 20 sets para agrupar
       .select('_id exercise reps weight sessionNumber createdAt');
 
-    console.log('📊 Sets previos encontrados:', previousSets.length);
+    
 
     if (!previousSets || previousSets.length === 0) {
-      console.log('ℹ️ No hay historial previo');
+      
       return res.json({
         sessionNumber: null,
         sets: [],
@@ -131,7 +131,7 @@ const getLastWorkout = async (req, res) => {
     const lastSessionNumber = Object.keys(sessionGroups).sort((a, b) => b - a)[0];
     const lastWorkoutSets = sessionGroups[lastSessionNumber] || [];
 
-    console.log('✅ Última sesión encontrada:', lastSessionNumber, 'con', lastWorkoutSets.length, 'sets');
+    
 
     res.json({
       sessionNumber: lastSessionNumber ? Number(lastSessionNumber) : null,
@@ -144,4 +144,33 @@ const getLastWorkout = async (req, res) => {
   }
 };
 
-module.exports = { getExercises, createExercise, updateExercise, getLastWorkout };
+const getSetsBySession = async (req, res) => {
+  try {
+    const { deviceId, routineId, sessionNumber } = req.query;
+
+    if (!deviceId || !routineId || !sessionNumber) {
+      return res.status(400).json({
+        error: 'deviceId, routineId y sessionNumber son requeridos'
+      });
+    }
+
+    
+
+    const sets = await Exercise.find({
+      deviceId,
+      routineId,
+      sessionNumber: Number(sessionNumber)
+    }).sort({ createdAt: 1 }); // Ordenar por fecha
+
+    
+
+    res.json(sets);
+  } catch (error) {
+    console.error('❌ GET SETS BY SESSION ERROR:', error);
+    res.status(500).json({ error: 'Error al obtener sets de la sesión' });
+  }
+};
+
+
+
+module.exports = { getExercises, createExercise, updateExercise, getLastWorkout, getSetsBySession };

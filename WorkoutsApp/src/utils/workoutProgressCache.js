@@ -50,7 +50,7 @@ export const getWorkoutProgress = async (deviceId, routineId, sessionNumber) => 
     const data = await AsyncStorage.getItem(key);
     
     if (!data) {
-      console.log('📭 No hay progreso guardado para esta sesión');
+      
       return null;
     }
     
@@ -62,7 +62,7 @@ export const getWorkoutProgress = async (deviceId, routineId, sessionNumber) => 
     const hoursSince = (now - lastUpdated) / (1000 * 60 * 60);
     
     if (hoursSince > 24) {
-      console.log('⏰ Progreso muy antiguo (>24h), limpiando...');
+      
       await clearWorkoutProgress(deviceId, routineId, sessionNumber);
       return null;
     }
@@ -86,7 +86,7 @@ export const clearWorkoutProgress = async (deviceId, routineId, sessionNumber) =
   try {
     const key = `${WORKOUT_PROGRESS_PREFIX}${deviceId}_${routineId}_${sessionNumber}`;
     await AsyncStorage.removeItem(key);
-    console.log('🗑️ Progreso de workout limpiado');
+    
     return true;
   } catch (error) {
     console.error('❌ Error limpiando progreso de workout:', error);

@@ -22,7 +22,7 @@ export default function ConfigureDaysScreen() {
   const { routineName, description, totalDays, totalSessions } = useLocalSearchParams();
   const daysCount = parseInt(totalDays);
 
-  console.log('Params recibidos:', { routineName, description, totalDays, totalSessions });
+  
 
   // Estado de días
   const [days, setDays] = useState(
@@ -130,7 +130,7 @@ export default function ConfigureDaysScreen() {
       isActive: true,
     };
     // Debug temporal
-    console.log('routineData a enviar:', routineData);
+    
     createMutation.mutate(routineData);
   };
 

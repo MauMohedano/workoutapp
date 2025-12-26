@@ -17,6 +17,7 @@ export default function RoutinesListScreen() {
         enabled: !!deviceId,
     });
 
+    
     // Mutation para activar rutina
     const activateMutation = useMutation({
         mutationFn: activateRoutine,

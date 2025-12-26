@@ -60,7 +60,7 @@ export const useCreateMeasurement = () => {
       queryClient.invalidateQueries({ queryKey: ['measurements'] });
       queryClient.invalidateQueries({ queryKey: ['latestMeasurement'] });
       queryClient.invalidateQueries({ queryKey: ['measurementStats'] });
-      console.log('✅ Measurement created successfully');
+      
     },
     onError: (error) => {
       console.error('❌ Error creating measurement:', error.message);
@@ -80,7 +80,7 @@ export const useUpdateMeasurement = () => {
       queryClient.invalidateQueries({ queryKey: ['measurements'] });
       queryClient.invalidateQueries({ queryKey: ['latestMeasurement'] });
       queryClient.invalidateQueries({ queryKey: ['measurementStats'] });
-      console.log('✅ Measurement updated successfully');
+      
     },
     onError: (error) => {
       console.error('❌ Error updating measurement:', error.message);
@@ -100,7 +100,7 @@ export const useDeleteMeasurement = () => {
       queryClient.invalidateQueries({ queryKey: ['measurements'] });
       queryClient.invalidateQueries({ queryKey: ['latestMeasurement'] });
       queryClient.invalidateQueries({ queryKey: ['measurementStats'] });
-      console.log('✅ Measurement deleted successfully');
+      
     },
     onError: (error) => {
       console.error('❌ Error deleting measurement:', error.message);

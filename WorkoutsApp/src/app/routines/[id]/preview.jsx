@@ -1,23 +1,57 @@
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { getRoutineById } from '../../api/routineApi';
+import { getRoutineById } from '../../../api/routineApi';
 import { colors, spacing, radius, Icon } from '@/design-systems/tokens';
-import { Text, Card, Button } from '@/design-systems/components';
+import { Text, Card } from '@/design-systems/components';
 import { ActivityIndicator } from 'react-native';
 import { getDayForSession } from '@/utils/sessionHelpers';
 import { getDayNameForSession } from '@/utils/routineHelpers';
+import { useState, useEffect } from 'react';  // ← AGREGAR useEffect
+import { getDeviceId } from '../../../utils/deviceId';
 
 export default function SessionPreviewScreen() {
-  const { routineId, sessionNumber, deviceId } = useLocalSearchParams();
+  const { id, sessionNumber } = useLocalSearchParams();
   const router = useRouter();
+  
+  // Estados
+  const [deviceId, setDeviceId] = useState(null);
+  const [routine, setRoutine] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch routine data
-  const { data: routine, isLoading } = useQuery({
-    queryKey: ['routine', routineId],
-    queryFn: () => getRoutineById(routineId),
-    enabled: !!routineId,
-  });
+  // Cargar routine con deviceId de forma manual
+useEffect(() => {
+  const loadRoutineWithProgress = async () => {
+    try {
+      setIsLoading(true);
+      
+        
+      
+      
+      // 1. Obtener deviceId
+      const deviceIdValue = await getDeviceId();
+      
+      setDeviceId(deviceIdValue);
+      
+      // 2. Llamar API CON deviceId
+       
+      const routineData = await getRoutineById(id, deviceIdValue);  
+      
+      setRoutine(routineData);
+      
+    } catch (error) {
+      console.error('❌ Error cargando routine:', error);
+      console.error('❌ Error details:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  if (id) { 
+    loadRoutineWithProgress();
+  } else {
+      
+  }
+}, [id]);
 
   if (isLoading) {
     return (
@@ -50,7 +84,7 @@ export default function SessionPreviewScreen() {
     );
   }
 
-  const estimatedTime = day.exercises?.length * 8 || 0; // ~8 min por ejercicio
+  const estimatedTime = day.exercises?.length * 8 || 0;
 
   return (
     <View style={styles.container}>
@@ -166,12 +200,7 @@ export default function SessionPreviewScreen() {
             ))}
           </Card>
         )}
-
-        {/* Spacer para botones flotantes */}
-       
       </ScrollView>
-
-     
     </View>
   );
 }
@@ -194,8 +223,6 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     paddingBottom: spacing.xl,
   },
-
-  // Header
   header: {
     marginBottom: spacing.lg,
   },
@@ -214,8 +241,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral.gray200,
     marginBottom: spacing.lg,
   },
-
-  // Sections
   section: {
     padding: spacing.xs,
     marginBottom: spacing.xs,
@@ -231,8 +256,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     lineHeight: 20,
   },
-
-  // Exercises
   exerciseItem: {
     marginBottom: spacing.md,
     paddingBottom: spacing.md,
@@ -259,26 +282,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-  },
-
-  // Floating buttons
-  floatingButtons: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: spacing.base,
-    paddingBottom: spacing.lg,
-    backgroundColor: colors.neutral.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral.gray200,
-    gap: spacing.sm,
-    ...{
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 5,
-    },
   },
 });

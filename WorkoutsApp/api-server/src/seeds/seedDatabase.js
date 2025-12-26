@@ -238,25 +238,25 @@ function generateMeasurements() {
 
 async function seedDatabase() {
   try {
-    console.log('🌱 Conectando a MongoDB...');
+    
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ Conectado a MongoDB');
+    
     
     // Limpiar datos existentes del usuario
-    console.log('🗑️  Limpiando datos existentes...');
+    
     await Routine.deleteMany({ deviceId: DEVICE_ID });
     await Exercise.deleteMany({ deviceId: DEVICE_ID });
     await SessionProgress.deleteMany({ deviceId: DEVICE_ID });
     await Measurement.deleteMany({ deviceId: DEVICE_ID });
-    console.log('✅ Datos limpiados');
+    
     
     // Insertar rutinas
-    console.log('📝 Creando rutinas...');
+    
     const createdRoutines = await Routine.insertMany(routines);
-    console.log(`✅ ${createdRoutines.length} rutinas creadas`);
+    
     
     // Generar sets para cada rutina
-    console.log('🏋️  Generando sets de ejercicios...');
+    
     let totalSets = 0;
     
     for (const routine of createdRoutines) {
@@ -279,19 +279,19 @@ async function seedDatabase() {
         });
       }
     }
-    console.log(`✅ ${totalSets} sets generados`);
+    
     
     // Insertar mediciones
-    console.log('📏 Creando mediciones...');
+    
     const measurements = generateMeasurements();
     await Measurement.insertMany(measurements);
-    console.log(`✅ ${measurements.length} mediciones creadas`);
     
-    console.log('\n🎉 ¡Seed completado exitosamente!');
-    console.log('📊 Resumen:');
-    console.log(`   - ${createdRoutines.length} rutinas`);
-    console.log(`   - ${totalSets} sets de ejercicios`);
-    console.log(`   - ${measurements.length} mediciones`);
+    
+    
+    
+    
+    
+    
     
     process.exit(0);
   } catch (error) {

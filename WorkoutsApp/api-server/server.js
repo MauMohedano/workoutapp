@@ -29,14 +29,14 @@ app.use('/api/measurements', measurementRoutes);
 // Conexión a Mongo
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('MongoDB conectado');
+    
      app.listen(3003, '0.0.0.0', () => {
-      console.log('🚀 Servidor corriendo en puerto 3003');
-      console.log('📝 Sets API: http://localhost:3003/api/exercises');
-      console.log('🔍 Ninja API: http://localhost:3003/api/ninja/exercises');
-      console.log('💪 Routines API: http://localhost:3003/api/routines');
-       console.log('📚 Catalog API: http://localhost:3003/api/catalog/search')
-       console.log('📏 Measurements API: http://localhost:3003/api/measurements');
+      
+      
+      
+      
+       
+       
     });
   })
   .catch(err => console.error(err));

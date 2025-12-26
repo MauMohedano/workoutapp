@@ -7,7 +7,7 @@ import { API_URL } from '../config/api';
  */
 export const getUserStats = async (deviceId, period = 'all') => {
   try {
-    console.log('📊 Fetching stats for:', deviceId, '| Period:', period);
+    
     
     const response = await fetch(`${API_URL}/stats/${deviceId}?period=${period}`, {
       method: 'GET',
@@ -21,7 +21,7 @@ export const getUserStats = async (deviceId, period = 'all') => {
     }
     
     const data = await response.json();
-    console.log('✅ Stats loaded');
+    
     
     return data;
   } catch (error) {

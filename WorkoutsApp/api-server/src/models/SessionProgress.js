@@ -20,21 +20,33 @@ const SessionProgressSchema = new mongoose.Schema({
     type: Number, 
     default: 1,
     min: 1,
-    max: 21 
+    max: 72  // Actualizado de 21 a 72 para soportar rutinas más largas
   },
   
-  // Sesiones completadas (pueden no ser consecutivas)
-  completedSessions: [{ 
-    type: Number,
-    min: 1,
-    max: 21
+  // ✨ NUEVO: Sesiones completadas con metadata
+  completedSessions: [{
+    sessionNumber: { 
+      type: Number,
+      required: true,
+      min: 1,
+      max: 72
+    },
+    duration: {
+      type: Number,  // Duración en segundos
+      required: false,  // No requerido para retrocompatibilidad
+      min: 0
+    },
+    completedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   
   // Sesiones que el usuario decidió saltar
   skippedSessions: [{ 
     type: Number,
     min: 1,
-    max: 21
+    max: 72
   }],
   
   // Metadata
